@@ -275,7 +275,9 @@ export function ProductsView() {
     const critical = enriched.filter((x) => x.critical).length;
     const overstock = enriched.filter((x) => x.overstock).length;
     const dnr = enriched.filter((x) => x.product.dnr).length;
-    return { loss, critical, overstock, dnr, total: enriched.length };
+    const reorder = enriched.filter((x) => (x.recommendedUnits ?? 0) > 0 && !x.product.dnr).length;
+    const liquidation = enriched.filter((x) => x.liquidationDiscount != null && !x.product.dnr).length;
+    return { loss, critical, overstock, dnr, reorder, liquidation, total: enriched.length };
   }, [enriched]);
 
   if (!storeId) {
@@ -416,6 +418,51 @@ export function ProductsView() {
             >
               DNR
             </Button>
+
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={enriched.length === 0}
+                onClick={() => {
+                  const rowsCsv = enriched
+                    .filter((x) => (x.recommendedUnits ?? 0) > 0 && !x.product.dnr)
+                    .map((x) => ({
+                      sku: x.product.sku,
+                      name: x.product.name,
+                      stock_level: x.product.stock_level,
+                      velocity: x.product.velocity,
+                      dir: x.dir == null ? "" : Math.round(x.dir),
+                      recommended_units: x.recommendedUnits ?? "",
+                    }));
+                  downloadCsv("netprofithub_reorder_plani_products.csv", toCsv(rowsCsv));
+                }}
+              >
+                Reorder CSV
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={enriched.length === 0}
+                onClick={() => {
+                  const rowsCsv = enriched
+                    .filter((x) => x.liquidationDiscount != null && !x.product.dnr)
+                    .map((x) => ({
+                      sku: x.product.sku,
+                      name: x.product.name,
+                      stock_level: x.product.stock_level,
+                      velocity: x.product.velocity,
+                      dir: x.dir == null ? "" : Math.round(x.dir),
+                      suggested_discount: x.liquidationDiscount ?? "",
+                    }));
+                  downloadCsv("netprofithub_liquidation_plani_products.csv", toCsv(rowsCsv));
+                }}
+              >
+                Liquidation CSV
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -435,7 +482,7 @@ export function ProductsView() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 md:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-7">
         <Card>
           <CardHeader>
             <CardTitle>Toplam</CardTitle>
@@ -460,6 +507,17 @@ export function ProductsView() {
         </Card>
         <Card>
           <CardHeader>
+            <CardTitle>Reorder</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats.reorder}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Önerilen sipariş &gt; 0
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle>Kritik Stok</CardTitle>
           </CardHeader>
           <CardContent>
@@ -477,6 +535,17 @@ export function ProductsView() {
             <div className="text-2xl font-semibold">{stats.overstock}</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               DIR ≥ 90
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Liquidation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats.liquidation}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              İndirim önerisi var
             </div>
           </CardContent>
         </Card>
