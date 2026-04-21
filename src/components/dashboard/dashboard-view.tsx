@@ -8,6 +8,7 @@ import { calculateMer, calculateNetProfit, calculateRoas } from "@/lib/trueprofi
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchProducts } from "@/lib/queries/products";
+import { fetchOrders } from "@/lib/queries/orders";
 import {
   fetchDashboardTimeseries,
   fetchDailyMetrics,
@@ -53,6 +54,16 @@ function formatCompact(value: number) {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function channelLabel(channel: string | null | undefined) {
+  const c = String(channel ?? "");
+  if (c === "web") return "Web (Tsoft)";
+  if (c === "trendyol") return "Trendyol";
+  if (c === "hepsiburada") return "Hepsiburada";
+  if (c === "amazon") return "Amazon";
+  if (!c) return "—";
+  return c;
 }
 
 function buildActionItems(args: {
@@ -223,6 +234,37 @@ export function DashboardView() {
       }),
     enabled: Boolean(storeId),
   });
+
+  const ordersQuery = useQuery({
+    queryKey: ["orders", storeId, dateRange.from.toISOString(), dateRange.to.toISOString()],
+    queryFn: () => fetchOrders({ storeId: storeId!, from: dateRange.from, to: dateRange.to }),
+    enabled: Boolean(storeId),
+  });
+
+  const channelBreakdown = useMemo(() => {
+    const rows = ordersQuery.data ?? [];
+    const paid = rows.filter((o) => String(o.status) === "odendi");
+    const totalRevenue = paid.reduce((acc, o) => acc + Number(o.amount ?? 0), 0);
+
+    const map = new Map<string, { orders: number; revenue: number }>();
+    for (const o of paid) {
+      const key = String(o.channel ?? "bilinmiyor");
+      const prev = map.get(key) ?? { orders: 0, revenue: 0 };
+      prev.orders += 1;
+      prev.revenue += Number(o.amount ?? 0);
+      map.set(key, prev);
+    }
+
+    return Array.from(map.entries())
+      .map(([channel, v]) => ({
+        channel,
+        orders: v.orders,
+        revenue: v.revenue,
+        share: totalRevenue > 0 ? v.revenue / totalRevenue : null,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 6);
+  }, [ordersQuery.data]);
 
   const netProfit = useMemo(() => {
     if (!summary) return null;
@@ -836,7 +878,40 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        <div />
+        <Card>
+          <CardHeader>
+            <CardTitle>Pazaryeri / Kanal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Ödendi siparişlerde ciro payı (seçili aralık)
+            </div>
+            {channelBreakdown.length === 0 ? (
+              <div className="text-sm text-slate-600 dark:text-slate-300">
+                Veri yok.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {channelBreakdown.map((r) => (
+                  <div key={r.channel} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="truncate text-slate-900 dark:text-slate-100">
+                        {channelLabel(r.channel)}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        {r.orders} sipariş
+                        {r.share == null ? "" : ` • ${Math.round(r.share * 100)}%`}
+                      </div>
+                    </div>
+                    <div className="tabular-nums font-medium">
+                      {formatCurrencyTRY(r.revenue)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section>
