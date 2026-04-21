@@ -8,12 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Table, TD, TH, THead, TRow } from "@/components/ui/table";
 import { fetchProducts } from "@/lib/queries/products";
 import { fetchOrderItems } from "@/lib/queries/order-items";
-import { aggregateSkuProfit, safeDivide } from "@/lib/profitability";
+import { aggregateSkuProfitDetailed, safeDivide } from "@/lib/profitability";
 import { updateProductCogs, updateProductDnr } from "@/lib/queries/update-product";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { calculateDIR } from "@/lib/inventory";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { useProfitOverrides } from "@/components/finance/use-profit-overrides";
+import { fetchDailyMetrics } from "@/lib/queries/dashboard";
+import { fetchDashboardSummary } from "@/lib/queries/metrics";
+import Link from "next/link";
 
 function formatCurrencyTRY(value: number) {
   return new Intl.NumberFormat("tr-TR", {
@@ -30,13 +34,59 @@ function formatPercent(value: number) {
   }).format(value);
 }
 
+type InventoryPolicy = {
+  leadTimeDays: number;
+  safetyDays: number;
+  targetCoverageDays: number;
+  reorderThresholdDays: number;
+  overstockThresholdDays: number;
+};
+
+function clampInt(value: unknown, fallback: number, min: number, max: number) {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function loadInventoryPolicy(storeId: string | null): InventoryPolicy {
+  const defaults: InventoryPolicy = {
+    leadTimeDays: 14,
+    safetyDays: 7,
+    targetCoverageDays: 30,
+    reorderThresholdDays: 14,
+    overstockThresholdDays: 90,
+  };
+  if (typeof window === "undefined") return defaults;
+  if (!storeId) return defaults;
+  try {
+    const raw = window.localStorage.getItem(`nph_inventory_policy:${storeId}`);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as Partial<InventoryPolicy>;
+    return {
+      leadTimeDays: clampInt(parsed.leadTimeDays, defaults.leadTimeDays, 0, 120),
+      safetyDays: clampInt(parsed.safetyDays, defaults.safetyDays, 0, 120),
+      targetCoverageDays: clampInt(parsed.targetCoverageDays, defaults.targetCoverageDays, 1, 180),
+      reorderThresholdDays: clampInt(parsed.reorderThresholdDays, defaults.reorderThresholdDays, 1, 60),
+      overstockThresholdDays: clampInt(parsed.overstockThresholdDays, defaults.overstockThresholdDays, 30, 365),
+    } satisfies InventoryPolicy;
+  } catch {
+    return defaults;
+  }
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 export function ProductsView() {
   const { storeId, dateRange } = useAppState();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<
-    "all" | "loss" | "critical" | "overstock" | "dnr"
+    "all" | "loss" | "critical" | "overstock" | "dnr" | "reorder" | "liquidation"
   >("all");
+  const [profitMode, setProfitMode] = useState<"cogs" | "true">("true");
   const queryClient = useQueryClient();
+  const { overrides } = useProfitOverrides(storeId);
 
   const productsQuery = useQuery({
     queryKey: ["products", storeId],
@@ -61,11 +111,34 @@ export function ProductsView() {
   });
 
   const profitBySku = useMemo(() => {
-    const agg = aggregateSkuProfit(itemsQuery.data ?? []);
-    const map = new Map<string, typeof agg[number]>();
+    const agg = aggregateSkuProfitDetailed(itemsQuery.data ?? []);
+    const map = new Map<string, (typeof agg)[number]>();
     for (const row of agg) map.set(row.sku, row);
     return map;
   }, [itemsQuery.data]);
+
+  const summaryQuery = useQuery({
+    queryKey: [
+      "dashboardSummary",
+      storeId,
+      dateRange.from.toISOString(),
+      dateRange.to.toISOString(),
+    ],
+    queryFn: () =>
+      fetchDashboardSummary({ storeId: storeId!, from: dateRange.from, to: dateRange.to }),
+    enabled: Boolean(storeId),
+  });
+
+  const dailyQuery = useQuery({
+    queryKey: [
+      "dailyMetrics",
+      storeId,
+      dateRange.from.toISOString(),
+      dateRange.to.toISOString(),
+    ],
+    queryFn: () => fetchDailyMetrics({ storeId: storeId!, from: dateRange.from, to: dateRange.to }),
+    enabled: Boolean(storeId),
+  });
 
   const updateCogs = useMutation({
     mutationFn: updateProductCogs,
@@ -94,39 +167,84 @@ export function ProductsView() {
   }, [productsQuery.data, q]);
 
   const enriched = useMemo(() => {
+    const policy = loadInventoryPolicy(storeId);
+    const totalAdSpend = Number(summaryQuery.data?.adSpend ?? 0);
+    const totalRevenueNet =
+      Array.from(profitBySku.values()).reduce((acc, r) => acc + Number(r.revenueNet ?? 0), 0) || 0;
+
+    const tx = (dailyQuery.data ?? []).reduce((acc, r) => acc + Number(r.transactions ?? 0), 0);
+    const shippingTotal = tx * Number(overrides.shippingCostPerOrder ?? 0);
+    const feesTotal = totalRevenueNet * Number(overrides.marketplaceFeeRate ?? 0);
+
     return rows
       .map((p) => {
         const agg = profitBySku.get(p.sku);
-        const units = agg?.units ?? 0;
-        const revenue = agg?.revenue ?? 0;
-        const returnsUnits = agg?.returnsUnits ?? 0;
+        const units = agg?.unitsNet ?? 0;
+        const revenueGross = agg?.revenueGross ?? 0;
+        const revenueReturned = agg?.revenueReturned ?? 0;
+        const revenueNet = agg?.revenueNet ?? 0;
+        const returnsUnits = agg?.unitsReturned ?? 0;
 
         const cogs = Number(p.cogs ?? 0);
-        const unitRevenue = safeDivide(revenue, units) ?? 0;
+        const unitRevenue = safeDivide(revenueNet, units) ?? 0;
         const unitProfit = unitRevenue - cogs;
-        const totalProfit = revenue - units * cogs;
-        const margin = safeDivide(totalProfit, revenue);
+        const totalProfitCogs = revenueNet - units * cogs;
+        const marginCogs = safeDivide(totalProfitCogs, revenueNet);
         const returnRate = safeDivide(returnsUnits, Math.max(1, units + returnsUnits));
 
         const stock = Number(p.stock_level ?? 0);
         const velocity = Number(p.velocity ?? 0);
         const dir = calculateDIR(stock, velocity);
         const critical = stock <= 0 || (dir != null && dir <= 7);
-        const overstock = dir != null && dir >= 90;
+        const overstock = dir != null && dir >= policy.overstockThresholdDays;
+        const reorder =
+          !p.dnr && (stock <= 0 || (dir != null && dir <= policy.reorderThresholdDays));
+
+        const horizonDays = policy.leadTimeDays + policy.safetyDays + policy.targetCoverageDays;
+        const targetUnits = Math.max(0, velocity) * horizonDays;
+        const recommendedUnits = reorder ? Math.max(0, Math.ceil(targetUnits - stock)) : null;
+
+        const ratio = dir == null || !Number.isFinite(dir) ? 0 : (dir - policy.overstockThresholdDays) / policy.overstockThresholdDays;
+        const base = clamp(10 + ratio * 20, 10, 35);
+        const discountMin = Math.round(clamp(base - 5, 5, 40));
+        const discountMax = Math.round(clamp(base + 5, 10, 50));
+        const liquidationDiscount =
+          overstock && !p.dnr ? `${discountMin}–${discountMax}%` : null;
+
+        const revenueShare = totalRevenueNet > 0 ? revenueNet / totalRevenueNet : 0;
+        const allocatedAdSpend = totalAdSpend * revenueShare;
+        const allocatedShipping = shippingTotal * revenueShare;
+        const allocatedFees = feesTotal * revenueShare;
+        const totalProfitTrue =
+          revenueNet - units * cogs - allocatedAdSpend - allocatedShipping - allocatedFees;
+        const marginTrue = safeDivide(totalProfitTrue, revenueNet);
+
+        const totalProfit = profitMode === "true" ? totalProfitTrue : totalProfitCogs;
+        const margin = profitMode === "true" ? marginTrue : marginCogs;
 
         return {
           product: p,
           units,
-          revenue,
+          revenueGross,
+          revenueReturned,
+          revenueNet,
           returnsUnits,
           returnRate,
           cogs,
           unitProfit,
-          totalProfit,
           margin,
+          totalProfit,
+          totalProfitCogs,
+          totalProfitTrue,
+          allocatedAdSpend,
+          allocatedShipping,
+          allocatedFees,
           dir,
           critical,
           overstock,
+          reorder,
+          recommendedUnits,
+          liquidationDiscount,
         };
       })
       .filter((x) => {
@@ -135,10 +253,22 @@ export function ProductsView() {
         if (filter === "critical") return x.critical;
         if (filter === "overstock") return x.overstock;
         if (filter === "loss") return x.totalProfit < 0;
+        if (filter === "reorder") return x.reorder && (x.recommendedUnits ?? 0) > 0;
+        if (filter === "liquidation") return x.liquidationDiscount != null;
         return true;
       })
       .sort((a, b) => b.totalProfit - a.totalProfit);
-  }, [filter, profitBySku, rows]);
+  }, [
+    dailyQuery.data,
+    filter,
+    overrides.marketplaceFeeRate,
+    overrides.shippingCostPerOrder,
+    profitBySku,
+    profitMode,
+    rows,
+    storeId,
+    summaryQuery.data?.adSpend,
+  ]);
 
   const stats = useMemo(() => {
     const loss = enriched.filter((x) => x.totalProfit < 0).length;
@@ -187,7 +317,27 @@ export function ProductsView() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Ürün Kârlılığı</CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>Ürün Kârlılığı</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={profitMode === "true" ? "secondary" : "ghost"}
+                onClick={() => setProfitMode("true")}
+              >
+                True Profit
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={profitMode === "cogs" ? "secondary" : "ghost"}
+                onClick={() => setProfitMode("cogs")}
+              >
+                COGS Bazlı
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-3">
@@ -228,6 +378,14 @@ export function ProductsView() {
             </Button>
             <Button
               type="button"
+              variant={filter === "reorder" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("reorder")}
+            >
+              Reorder Önerisi
+            </Button>
+            <Button
+              type="button"
               variant={filter === "critical" ? "secondary" : "ghost"}
               size="sm"
               onClick={() => setFilter("critical")}
@@ -244,12 +402,35 @@ export function ProductsView() {
             </Button>
             <Button
               type="button"
+              variant={filter === "liquidation" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("liquidation")}
+            >
+              Liquidation
+            </Button>
+            <Button
+              type="button"
               variant={filter === "dnr" ? "secondary" : "ghost"}
               size="sm"
               onClick={() => setFilter("dnr")}
             >
               DNR
             </Button>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="min-w-0">
+              {profitMode === "true" ? (
+                <>
+                  True Profit: kâr, reklam/kargo/komisyon toplamı SKU’lara ciro payına göre dağıtılarak hesaplanır (MVP simülasyonu).
+                </>
+              ) : (
+                <>COGS Bazlı: kâr = Net Ciro - (Net Adet × COGS)</>
+              )}
+            </div>
+            <Link href="/inventory" className="shrink-0 underline underline-offset-4">
+              Envanter Politikası →
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -327,14 +508,18 @@ export function ProductsView() {
                   stock_level: x.product.stock_level,
                   velocity: x.product.velocity,
                   dir: x.dir == null ? "" : Math.round(x.dir),
-                  units: x.units,
-                  revenue_try: Math.round(x.revenue),
+                  units_net: x.units,
+                  revenue_gross_try: Math.round(x.revenueGross),
+                  revenue_net_try: Math.round(x.revenueNet),
+                  returned_revenue_try: Math.round(x.revenueReturned),
                   cogs_try: Math.round(x.cogs),
                   profit_try: Math.round(x.totalProfit),
                   margin: x.margin == null ? "" : Math.round(x.margin * 1000) / 1000,
                   returned_units: x.returnsUnits,
                   return_rate: x.returnRate == null ? "" : Math.round(x.returnRate * 1000) / 1000,
                   dnr: x.product.dnr ? "evet" : "hayir",
+                  reorder_units: x.recommendedUnits == null ? "" : x.recommendedUnits,
+                  liquidation_discount: x.liquidationDiscount ?? "",
                 }));
                 const csv = toCsv(rowsCsv);
                 downloadCsv("netprofithub_urun_karlilik.csv", csv);
@@ -354,11 +539,12 @@ export function ProductsView() {
                 <TH className="text-right">Stok</TH>
                 <TH className="text-right">DIR</TH>
                 <TH className="text-right">Satış</TH>
-                <TH className="text-right">Gelir</TH>
+                <TH className="text-right">Net Ciro</TH>
                 <TH className="text-right">İade</TH>
                 <TH className="text-right">COGS</TH>
                 <TH className="text-right">Kâr</TH>
                 <TH className="text-right">Marj</TH>
+                <TH className="text-right">Öneri</TH>
                 <TH>Durum</TH>
               </TRow>
             </THead>
@@ -377,7 +563,7 @@ export function ProductsView() {
                     </TD>
                     <TD className="text-right tabular-nums">{x.units}</TD>
                     <TD className="text-right tabular-nums">
-                      {formatCurrencyTRY(x.revenue)}
+                      {formatCurrencyTRY(x.revenueNet)}
                     </TD>
                     <TD className="text-right tabular-nums">
                       {x.returnsUnits}
@@ -423,6 +609,21 @@ export function ProductsView() {
                     <TD className="text-right tabular-nums">
                       {x.margin == null ? "—" : formatPercent(x.margin)}
                     </TD>
+                    <TD className="text-right tabular-nums">
+                      <div className="flex flex-col items-end gap-1">
+                        {x.recommendedUnits != null && x.recommendedUnits > 0 && !p.dnr && (
+                          <span className="text-xs text-emerald-700 dark:text-emerald-200">
+                            +{x.recommendedUnits} sipariş
+                          </span>
+                        )}
+                        {x.liquidationDiscount != null && (
+                          <span className="text-xs text-amber-700 dark:text-amber-200">
+                            {x.liquidationDiscount} indirim
+                          </span>
+                        )}
+                        {x.recommendedUnits == null && x.liquidationDiscount == null && "—"}
+                      </div>
+                    </TD>
                     <TD className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -439,6 +640,10 @@ export function ProductsView() {
                       {x.totalProfit < 0 && <Badge variant="danger">Zarar</Badge>}
                       {x.critical && <Badge variant="danger">Kritik</Badge>}
                       {x.overstock && <Badge variant="warning">Overstock</Badge>}
+                      {x.reorder && !p.dnr && <Badge variant="success">Sipariş Önerisi</Badge>}
+                      {x.liquidationDiscount != null && !p.dnr && (
+                        <Badge variant="warning">Liquidation</Badge>
+                      )}
                       {String(p.status) !== "aktif" && (
                         <Badge variant="default">Pasif</Badge>
                       )}
