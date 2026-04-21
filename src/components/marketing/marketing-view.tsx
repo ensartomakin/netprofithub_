@@ -15,6 +15,8 @@ import { fetchDashboardTimeseries } from "@/lib/queries/dashboard";
 import { useProfitOverrides } from "@/components/finance/use-profit-overrides";
 import { Badge } from "@/components/ui/badge";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { fetchOrders } from "@/lib/queries/orders";
+import { toLocalISODate } from "@/lib/date";
 import {
   CartesianGrid,
   Line,
@@ -53,9 +55,30 @@ function formatShortDate(iso: string) {
   );
 }
 
+function formatPercent(value: number) {
+  return new Intl.NumberFormat("tr-TR", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function channelLabel(channel: string | null | undefined) {
+  const c = String(channel ?? "");
+  if (c === "web") return "Web (Tsoft)";
+  if (c === "trendyol") return "Trendyol";
+  if (c === "hepsiburada") return "Hepsiburada";
+  if (c === "amazon") return "Amazon";
+  if (!c) return "—";
+  return c;
+}
+
 export function MarketingView() {
   const { storeId, dateRange } = useAppState();
   const [chartMode, setChartMode] = useState<"spend" | "revenue" | "roi">("spend");
+  const [channelFilter, setChannelFilter] = useState<
+    "all" | "web" | "trendyol" | "hepsiburada" | "amazon"
+  >("all");
+  const [platformFilter, setPlatformFilter] = useState<string>("all");
   const { overrides } = useProfitOverrides(storeId);
 
   const summaryQuery = useQuery({
@@ -126,6 +149,19 @@ export function MarketingView() {
     enabled: Boolean(storeId),
   });
 
+  const ordersQuery = useQuery({
+    queryKey: ["orders", storeId, dateRange.from.toISOString(), dateRange.to.toISOString()],
+    queryFn: () => fetchOrders({ storeId: storeId!, from: dateRange.from, to: dateRange.to }),
+    enabled: Boolean(storeId),
+  });
+
+  const availablePlatforms = useMemo(() => {
+    const rows = spendQuery.data ?? [];
+    const s = new Set<string>();
+    for (const r of rows) s.add(String(r.platform ?? "bilinmiyor"));
+    return Array.from(s.values()).sort((a, b) => a.localeCompare(b));
+  }, [spendQuery.data]);
+
   const platformRows = useMemo(() => {
     const rows = spendQuery.data ?? [];
     const map = new Map<string, number>();
@@ -137,6 +173,71 @@ export function MarketingView() {
       .map(([platform, spend]) => ({ platform, spend }))
       .sort((a, b) => b.spend - a.spend);
   }, [spendQuery.data]);
+
+  const channelPerformance = useMemo(() => {
+    const orders = ordersQuery.data ?? [];
+    const paid = orders.filter((o) => String(o.status) === "odendi");
+
+    // spend by day (from spend rows)
+    const spends = spendQuery.data ?? [];
+    const spendByDay = new Map<string, number>();
+    for (const s of spends) {
+      const day = String(s.date);
+      spendByDay.set(day, (spendByDay.get(day) ?? 0) + Number(s.spend ?? 0));
+    }
+
+    // profit by day (from dashboard series)
+    const series = seriesQuery.data ?? [];
+    const profitByDay = new Map<string, number>();
+    for (const p of series) profitByDay.set(String(p.date), Number(p.netProfit ?? 0));
+
+    // revenue/orders by day & channel
+    const revenueByDay = new Map<string, number>();
+    const byDayChannel = new Map<string, Map<string, { revenue: number; orders: number }>>();
+    for (const o of paid) {
+      const day = toLocalISODate(new Date(String(o.ordered_at)));
+      const channel = String(o.channel ?? "bilinmiyor");
+      const revenue = Number(o.amount ?? 0);
+
+      revenueByDay.set(day, (revenueByDay.get(day) ?? 0) + revenue);
+      const m = byDayChannel.get(day) ?? new Map<string, { revenue: number; orders: number }>();
+      const prev = m.get(channel) ?? { revenue: 0, orders: 0 };
+      prev.revenue += revenue;
+      prev.orders += 1;
+      m.set(channel, prev);
+      byDayChannel.set(day, m);
+    }
+
+    const acc = new Map<string, { channel: string; revenue: number; spend: number; profit: number; orders: number }>();
+    for (const [day, m] of byDayChannel.entries()) {
+      const dayRevenue = revenueByDay.get(day) ?? 0;
+      if (dayRevenue <= 0) continue;
+      const daySpend = spendByDay.get(day) ?? 0;
+      const dayProfit = profitByDay.get(day) ?? 0;
+
+      for (const [channel, v] of m.entries()) {
+        const share = v.revenue / dayRevenue;
+        const prev = acc.get(channel) ?? { channel, revenue: 0, spend: 0, profit: 0, orders: 0 };
+        prev.revenue += v.revenue;
+        prev.orders += v.orders;
+        prev.spend += daySpend * share;
+        prev.profit += dayProfit * share;
+        acc.set(channel, prev);
+      }
+    }
+
+    const spendTotal = Array.from(acc.values()).reduce((a, x) => a + x.spend, 0);
+
+    return Array.from(acc.values())
+      .map((r) => ({
+        ...r,
+        roas: safeDivide(r.revenue, r.spend),
+        mer: safeDivide(r.spend, r.revenue),
+        margin: safeDivide(r.profit, r.revenue),
+        spendShare: safeDivide(r.spend, spendTotal),
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [ordersQuery.data, seriesQuery.data, spendQuery.data]);
 
   const chartPoints = useMemo(() => {
     const rows = dailyQuery.data ?? [];
@@ -154,6 +255,7 @@ export function MarketingView() {
     const rows = spendQuery.data ?? [];
     const map = new Map<string, { spend: number; platform: string }>();
     for (const r of rows) {
+      if (platformFilter !== "all" && String(r.platform ?? "") !== platformFilter) continue;
       const name = (r.campaign_name ?? "İsimsiz Kampanya").trim();
       const key = `${String(r.platform ?? "bilinmiyor")}::${name}`;
       const prev = map.get(key) ?? { spend: 0, platform: String(r.platform) };
@@ -167,11 +269,12 @@ export function MarketingView() {
       })
       .sort((a, b) => b.spend - a.spend)
       .slice(0, 20);
-  }, [spendQuery.data]);
+  }, [platformFilter, spendQuery.data]);
 
   const campaignAttribution = useMemo(() => {
     const spends = spendQuery.data ?? [];
     const series = seriesQuery.data ?? [];
+    const orders = ordersQuery.data ?? [];
 
     if (!storeId) return [];
     if (spends.length === 0 || series.length === 0) return [];
@@ -191,6 +294,20 @@ export function MarketingView() {
       });
     }
 
+    // channel revenue by day (paid only)
+    const paidOrders = orders.filter((o) => String(o.status) === "odendi");
+    const channelRevenueByDay = new Map<string, Map<string, number>>();
+    const totalRevenueByDay = new Map<string, number>();
+    for (const o of paidOrders) {
+      const day = toLocalISODate(new Date(String(o.ordered_at)));
+      const channel = String(o.channel ?? "bilinmiyor");
+      const revenue = Number(o.amount ?? 0);
+      totalRevenueByDay.set(day, (totalRevenueByDay.get(day) ?? 0) + revenue);
+      const m = channelRevenueByDay.get(day) ?? new Map<string, number>();
+      m.set(channel, (m.get(channel) ?? 0) + revenue);
+      channelRevenueByDay.set(day, m);
+    }
+
     const spendByDay = new Map<string, number>();
     for (const s of spends) {
       const day = String(s.date);
@@ -204,10 +321,24 @@ export function MarketingView() {
 
     for (const s of spends) {
       const day = String(s.date);
+      if (platformFilter !== "all" && String(s.platform ?? "") !== platformFilter) continue;
+
       const totalSpend = spendByDay.get(day) ?? 0;
       if (totalSpend <= 0) continue;
       const totals = dayTotals.get(day);
       if (!totals) continue;
+
+      const channelShare =
+        channelFilter === "all"
+          ? 1
+          : (() => {
+              const total = totalRevenueByDay.get(day) ?? 0;
+              if (total <= 0) return 0;
+              const m = channelRevenueByDay.get(day);
+              const ch = m?.get(channelFilter) ?? 0;
+              return ch / total;
+            })();
+      if (channelShare <= 0) continue;
 
       const share = Number(s.spend ?? 0) / totalSpend;
       const platform = String(s.platform ?? "bilinmiyor");
@@ -230,8 +361,8 @@ export function MarketingView() {
         });
 
       prev.spend += Number(s.spend ?? 0);
-      prev.revenue += totals.revenue * share;
-      prev.profit += totals.profit * share;
+      prev.revenue += totals.revenue * share * channelShare;
+      prev.profit += totals.profit * share * channelShare;
 
       byKey.set(key, prev);
     }
@@ -244,7 +375,26 @@ export function MarketingView() {
       }))
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 20);
-  }, [seriesQuery.data, spendQuery.data, storeId]);
+  }, [channelFilter, ordersQuery.data, platformFilter, seriesQuery.data, spendQuery.data, storeId]);
+
+  const platformAttribution = useMemo(() => {
+    const map = new Map<string, { platform: string; spend: number; revenue: number; profit: number }>();
+    for (const r of campaignAttribution) {
+      const key = String(r.platform ?? "bilinmiyor");
+      const prev = map.get(key) ?? { platform: key, spend: 0, revenue: 0, profit: 0 };
+      prev.spend += Number(r.spend ?? 0);
+      prev.revenue += Number(r.revenue ?? 0);
+      prev.profit += Number(r.profit ?? 0);
+      map.set(key, prev);
+    }
+    return Array.from(map.values())
+      .map((r) => ({
+        ...r,
+        roas: safeDivide(r.revenue, r.spend),
+        margin: safeDivide(r.profit, r.revenue),
+      }))
+      .sort((a, b) => b.spend - a.spend);
+  }, [campaignAttribution]);
 
   if (!storeId) {
     return (
@@ -264,7 +414,8 @@ export function MarketingView() {
     summaryQuery.isLoading ||
     spendQuery.isLoading ||
     dailyQuery.isLoading ||
-    seriesQuery.isLoading
+    seriesQuery.isLoading ||
+    ordersQuery.isLoading
   ) {
     return (
       <div className="text-sm text-slate-600 dark:text-slate-300">
@@ -277,7 +428,8 @@ export function MarketingView() {
     summaryQuery.isError ||
     spendQuery.isError ||
     dailyQuery.isError ||
-    seriesQuery.isError
+    seriesQuery.isError ||
+    ordersQuery.isError
   ) {
     return (
       <Card>
@@ -299,6 +451,53 @@ export function MarketingView() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>Filtreler</CardTitle>
+            <Badge variant="default">MVP</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2">
+          <label className="block">
+            <span className="text-xs text-slate-500 dark:text-slate-400">Kanal</span>
+            <select
+              value={channelFilter}
+              onChange={(e) =>
+                setChannelFilter(
+                  e.target.value as "all" | "web" | "trendyol" | "hepsiburada" | "amazon"
+                )
+              }
+              className="mt-1 h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+            >
+              <option value="all">Tümü</option>
+              <option value="web">Web (Tsoft)</option>
+              <option value="trendyol">Trendyol</option>
+              <option value="hepsiburada">Hepsiburada</option>
+              <option value="amazon">Amazon</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs text-slate-500 dark:text-slate-400">Reklam Platformu</span>
+            <select
+              value={platformFilter}
+              onChange={(e) => setPlatformFilter(e.target.value)}
+              className="mt-1 h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+            >
+              <option value="all">Tümü</option>
+              {availablePlatforms.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="text-xs text-slate-500 dark:text-slate-400 md:col-span-2">
+            Not: Kanal filtresi, kampanya “net kâr atfını” kanalın günlük ciro payına göre daraltır (simülasyon).
+          </div>
+        </CardContent>
+      </Card>
+
       <section className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
@@ -440,6 +639,93 @@ export function MarketingView() {
         <AdSpendBreakdown rows={platformRows} />
       </section>
 
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Kanal Performansı (Simülasyon)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <THead>
+                <TRow className="border-b-0">
+                  <TH>Kanal</TH>
+                  <TH className="text-right">Sipariş</TH>
+                  <TH className="text-right">Ciro</TH>
+                  <TH className="text-right">Harcama</TH>
+                  <TH className="text-right">Net Kâr</TH>
+                  <TH className="text-right">ROAS</TH>
+                </TRow>
+              </THead>
+              <tbody>
+                {channelPerformance.slice(0, 10).map((r) => (
+                  <TRow key={r.channel}>
+                    <TD className="font-medium">{channelLabel(r.channel)}</TD>
+                    <TD className="text-right tabular-nums">{r.orders}</TD>
+                    <TD className="text-right tabular-nums">{formatCurrencyTRY(r.revenue)}</TD>
+                    <TD className="text-right tabular-nums">{formatCurrencyTRY(r.spend)}</TD>
+                    <TD className="text-right tabular-nums">
+                      <span className={r.profit < 0 ? "text-rose-700 dark:text-rose-200" : undefined}>
+                        {formatCurrencyTRY(r.profit)}
+                      </span>
+                    </TD>
+                    <TD className="text-right tabular-nums">{r.roas == null ? "—" : `${formatNumber(r.roas)}x`}</TD>
+                  </TRow>
+                ))}
+              </tbody>
+            </Table>
+            {channelPerformance.length === 0 && (
+              <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+                Kanal verisi yok.
+              </div>
+            )}
+            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              Not: Harcama ve net kâr, gün bazında kanalın ciro payına göre dağıtılır (MVP simülasyonu).
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Platform Net Kâr Özeti (Simülasyon)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <THead>
+                <TRow className="border-b-0">
+                  <TH>Platform</TH>
+                  <TH className="text-right">Harcama</TH>
+                  <TH className="text-right">Atfedilen Ciro</TH>
+                  <TH className="text-right">Atfedilen Net Kâr</TH>
+                  <TH className="text-right">ROAS</TH>
+                  <TH className="text-right">Marj</TH>
+                </TRow>
+              </THead>
+              <tbody>
+                {platformAttribution.slice(0, 10).map((r) => (
+                  <TRow key={r.platform}>
+                    <TD className="font-medium">{r.platform}</TD>
+                    <TD className="text-right tabular-nums">{formatCurrencyTRY(r.spend)}</TD>
+                    <TD className="text-right tabular-nums">{formatCurrencyTRY(r.revenue)}</TD>
+                    <TD className="text-right tabular-nums">
+                      <span className={r.profit < 0 ? "text-rose-700 dark:text-rose-200" : undefined}>
+                        {formatCurrencyTRY(r.profit)}
+                      </span>
+                    </TD>
+                    <TD className="text-right tabular-nums">{r.roas == null ? "—" : `${formatNumber(r.roas)}x`}</TD>
+                    <TD className="text-right tabular-nums">{r.margin == null ? "—" : formatPercent(r.margin)}</TD>
+                  </TRow>
+                ))}
+              </tbody>
+            </Table>
+            {platformAttribution.length === 0 && (
+              <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+                Platform özeti için veri yok.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
       <Card>
         <CardHeader>
           <CardTitle>En Çok Harcama Yapılan Kampanyalar</CardTitle>
@@ -489,6 +775,12 @@ export function MarketingView() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="warning">Simülasyon</Badge>
+              {(channelFilter !== "all" || platformFilter !== "all") && (
+                <Badge variant="default">
+                  {channelFilter !== "all" ? channelLabel(channelFilter) : "Tüm kanallar"}
+                  {platformFilter !== "all" ? ` • ${platformFilter}` : ""}
+                </Badge>
+              )}
               <Button
                 type="button"
                 variant="secondary"
@@ -502,6 +794,7 @@ export function MarketingView() {
                     attributed_net_profit_try: Math.round(r.profit),
                     roas: r.roas == null ? "" : Math.round(r.roas * 100) / 100,
                     margin: r.margin == null ? "" : Math.round(r.margin * 1000) / 1000,
+                    channel: channelFilter === "all" ? "" : channelFilter,
                   }));
                   const csv = toCsv(rows);
                   downloadCsv("netprofithub_kampanya_net_kar_atfi.csv", csv);
