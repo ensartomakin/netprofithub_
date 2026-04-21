@@ -136,11 +136,12 @@ const start = new Date(now);
 start.setHours(0, 0, 0, 0);
 start.setDate(start.getDate() - 59);
 
-const platforms = ["Meta Ads", "Google Ads", "TikTok Ads"] as const;
+const platforms = ["Meta Ads", "Google Ads", "TikTok Ads", "Pinterest Ads"] as const;
 const campaigns = {
   "Meta Ads": ["Prospecting - ABO", "Retargeting - CBO"],
   "Google Ads": ["Brand Search", "Shopping - PMax"],
   "TikTok Ads": ["Spark Ads", "Broad - Creative Test"],
+  "Pinterest Ads": ["Prospecting - Interests", "Retargeting - Catalog"],
 } as const;
 
 const priceBySku: Record<string, number> = {
@@ -182,7 +183,14 @@ for (let day = 0; day < 60; day += 1) {
 
   // Spend per platform
   for (const p of platforms) {
-    const base = p === "Meta Ads" ? 140 : p === "Google Ads" ? 90 : 55;
+    const base =
+      p === "Meta Ads"
+        ? 140
+        : p === "Google Ads"
+          ? 90
+          : p === "Pinterest Ads"
+            ? 45
+            : 55;
     const jitter = (rng() - 0.5) * 30;
     const spend = clamp((base + jitter) * weekdayFactor * season, 10, 320);
     demoSpendsGenerated.push({
