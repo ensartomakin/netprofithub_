@@ -5,6 +5,7 @@ import { demoOrders } from "@/lib/demo/data";
 export type OrderRow = {
   id: string;
   customer_id: string | null;
+  channel: string | null;
   amount: number;
   tax: number;
   shipping: number;
@@ -28,6 +29,7 @@ export async function fetchOrders(params: { storeId: string; from: Date; to: Dat
       .map((o) => ({
         id: o.id,
         customer_id: o.customer_id ?? null,
+        channel: o.channel ?? null,
         amount: o.amount,
         tax: o.tax,
         shipping: o.shipping,
@@ -51,6 +53,7 @@ export async function fetchOrders(params: { storeId: string; from: Date; to: Dat
     return {
       id: String(r.id ?? ""),
       customer_id: r.customer_id == null ? null : String(r.customer_id),
+      channel: r.channel == null ? null : String(r.channel),
       amount: Number(r.amount ?? 0),
       tax: Number(r.tax ?? 0),
       shipping: Number(r.shipping ?? 0),
@@ -59,4 +62,3 @@ export async function fetchOrders(params: { storeId: string; from: Date; to: Dat
     } satisfies OrderRow;
   });
 }
-

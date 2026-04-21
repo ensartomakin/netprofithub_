@@ -42,12 +42,25 @@ function sum(values: number[]) {
   return values.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0);
 }
 
+function channelLabel(channel: string | null | undefined) {
+  const c = String(channel ?? "");
+  if (c === "web") return "Web (Tsoft)";
+  if (c === "trendyol") return "Trendyol";
+  if (c === "hepsiburada") return "Hepsiburada";
+  if (c === "amazon") return "Amazon";
+  if (!c) return "—";
+  return c;
+}
+
 export function OrdersView() {
   const { storeId, dateRange } = useAppState();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | "odendi" | "beklemede" | "iade" | "iptal">(
     "all"
   );
+  const [channel, setChannel] = useState<
+    "all" | "web" | "trendyol" | "hepsiburada" | "amazon"
+  >("all");
 
   const ordersQuery = useQuery({
     queryKey: ["orders", storeId, dateRange.from.toISOString(), dateRange.to.toISOString()],
@@ -65,6 +78,10 @@ export function OrdersView() {
         return String(o.status) === status;
       })
       .filter((o) => {
+        if (channel === "all") return true;
+        return String(o.channel ?? "") === channel;
+      })
+      .filter((o) => {
         if (!query) return true;
         return (
           String(o.id).toLowerCase().includes(query) ||
@@ -72,7 +89,7 @@ export function OrdersView() {
         );
       })
       .sort((a, b) => String(b.ordered_at).localeCompare(String(a.ordered_at)));
-  }, [ordersQuery.data, q, status]);
+  }, [channel, ordersQuery.data, q, status]);
 
   const stats = useMemo(() => {
     const paid = filtered.filter((o) => o.status === "odendi");
@@ -192,6 +209,7 @@ export function OrdersView() {
                 const rows = filtered.map((o) => ({
                   id: o.id,
                   customer_id: o.customer_id ?? "",
+                  channel: o.channel ?? "",
                   status: o.status,
                   amount_try: Math.round(o.amount),
                   tax_try: Math.round(o.tax),
@@ -208,7 +226,7 @@ export function OrdersView() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <label className="block md:col-span-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 Ara (Sipariş ID / Müşteri ID)
@@ -232,6 +250,30 @@ export function OrdersView() {
                 <option value="iptal">İptal</option>
               </select>
             </label>
+
+            <label className="block">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Kanal</span>
+              <select
+                value={channel}
+                onChange={(e) =>
+                  setChannel(
+                    e.target.value as
+                      | "all"
+                      | "web"
+                      | "trendyol"
+                      | "hepsiburada"
+                      | "amazon"
+                  )
+                }
+                className="h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+              >
+                <option value="all">Tümü</option>
+                <option value="web">Web (Tsoft)</option>
+                <option value="trendyol">Trendyol</option>
+                <option value="hepsiburada">Hepsiburada</option>
+                <option value="amazon">Amazon</option>
+              </select>
+            </label>
           </div>
 
           <Table>
@@ -239,6 +281,7 @@ export function OrdersView() {
               <TRow className="border-b-0">
                 <TH>Sipariş</TH>
                 <TH>Müşteri</TH>
+                <TH>Kanal</TH>
                 <TH>Durum</TH>
                 <TH className="text-right">Tutar</TH>
                 <TH className="text-right">Vergi</TH>
@@ -252,6 +295,9 @@ export function OrdersView() {
                   <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">{o.id}</TD>
                   <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">
                     {o.customer_id ?? "—"}
+                  </TD>
+                  <TD className="text-xs text-slate-600 dark:text-slate-300">
+                    {channelLabel(o.channel)}
                   </TD>
                   <TD>{statusBadge(o.status)}</TD>
                   <TD className="text-right tabular-nums">{formatCurrencyTRY(o.amount)}</TD>

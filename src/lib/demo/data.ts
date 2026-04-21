@@ -20,6 +20,7 @@ export type DemoOrder = {
   id: string;
   store_id: string;
   customer_id: string;
+  channel: "web" | "trendyol" | "hepsiburada" | "amazon";
   amount: number;
   tax: number;
   shipping: number;
@@ -212,6 +213,15 @@ for (let day = 0; day < 60; day += 1) {
 
     const orderId = `o${orderSeq++}`;
     const customerId = pickCustomerId();
+    const channelRoll = rng();
+    const channel: DemoOrder["channel"] =
+      channelRoll < 0.55
+        ? "web"
+        : channelRoll < 0.8
+          ? "trendyol"
+          : channelRoll < 0.92
+            ? "hepsiburada"
+            : "amazon";
     // 1-3 items
     const itemsCount = 1 + Math.floor(rng() * 3);
     let orderRevenue = 0;
@@ -241,6 +251,7 @@ for (let day = 0; day < 60; day += 1) {
       id: orderId,
       store_id: storeId,
       customer_id: customerId,
+      channel,
       amount: Math.round(orderRevenue),
       tax: 0,
       shipping: 0,
