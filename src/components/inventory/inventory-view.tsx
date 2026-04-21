@@ -11,6 +11,7 @@ import { Table, TD, TH, THead, TRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 function dirLabel(dir: number | null) {
   if (dir == null) return "—";
@@ -72,6 +73,10 @@ function loadPolicy(storeId: string | null) {
   }
 }
 
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 export function InventoryView() {
   const { storeId } = useAppState();
   const [filter, setFilter] = useState<
@@ -129,6 +134,62 @@ export function InventoryView() {
   const overStockCount = enriched.filter((x) => x.overStock).length;
   const dnrCount = enriched.filter((x) => x.p.dnr).length;
   const reorderCount = enriched.filter((x) => x.reorder).length;
+
+  const reorderPlan = useMemo(() => {
+    const rows = enriched
+      .filter((x) => x.recommendedUnits != null && x.recommendedUnits > 0 && !x.p.dnr)
+      .sort((a, b) => (b.recommendedUnits ?? 0) - (a.recommendedUnits ?? 0))
+      .slice(0, 20);
+
+    const eta = new Date();
+    eta.setDate(eta.getDate() + effectivePolicy.leadTimeDays);
+    const etaLabel = new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "short",
+    }).format(eta);
+
+    return {
+      etaLabel,
+      rows,
+      totalUnits: rows.reduce((acc, r) => acc + Number(r.recommendedUnits ?? 0), 0),
+    };
+  }, [effectivePolicy.leadTimeDays, enriched]);
+
+  const liquidationPlan = useMemo(() => {
+    const rows = enriched
+      .filter((x) => x.action === "overstock" && !x.p.dnr)
+      .map((x) => {
+        const stock = Number(x.p.stock_level ?? 0);
+        const velocity = Number(x.p.velocity ?? 0);
+        const dir = x.dir;
+
+        const targetUnits = Math.max(0, velocity) * effectivePolicy.targetCoverageDays;
+        const excessUnits =
+          velocity <= 0 ? stock : Math.max(0, Math.ceil(stock - targetUnits));
+
+        const threshold = effectivePolicy.overstockThresholdDays;
+        const ratio = dir == null || !Number.isFinite(dir) ? 0 : (dir - threshold) / threshold;
+        const base = clamp(10 + ratio * 20, 10, 35);
+        const minPct = Math.round(clamp(base - 5, 5, 40));
+        const maxPct = Math.round(clamp(base + 5, 10, 50));
+
+        return {
+          sku: String(x.p.sku),
+          name: String(x.p.name),
+          dir: x.dir,
+          stock,
+          velocity,
+          excessUnits,
+          discountRange: `${minPct}–${maxPct}%`,
+          kind: dir != null && dir >= threshold * 1.3 ? "agresif" : "kademeli",
+        };
+      })
+      .sort((a, b) => (b.excessUnits ?? 0) - (a.excessUnits ?? 0))
+      .slice(0, 20);
+
+    const totalExcess = rows.reduce((acc, r) => acc + Number(r.excessUnits ?? 0), 0);
+    return { rows, totalExcess };
+  }, [effectivePolicy.overstockThresholdDays, effectivePolicy.targetCoverageDays, enriched]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -400,6 +461,153 @@ export function InventoryView() {
             <div className="text-2xl font-semibold">{dnrCount}</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Yeniden sipariş önerilmez
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>Sipariş Planı (MVP)</CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={reorderPlan.rows.length === 0}
+                onClick={() => {
+                  const rows = reorderPlan.rows.map((r) => ({
+                    sku: r.p.sku,
+                    urun: r.p.name,
+                    stok: Number(r.p.stock_level ?? 0),
+                    velocity: Number(r.p.velocity ?? 0),
+                    dir_gun: r.dir == null ? "" : Math.round(r.dir),
+                    onerilen_adet: Number(r.recommendedUnits ?? 0),
+                    tahmini_teslim: reorderPlan.etaLabel,
+                  }));
+                  downloadCsv("netprofithub_siparis_plani.csv", toCsv(rows));
+                }}
+              >
+                CSV İndir
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-slate-600 dark:text-slate-300">
+              DIR ≤ {effectivePolicy.reorderThresholdDays} gün olan ürünlerde, {effectivePolicy.leadTimeDays} gün lead time + {effectivePolicy.safetyDays} gün güvenlik + {effectivePolicy.targetCoverageDays} gün kapsama hedeflenir.
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Tahmini teslim: {reorderPlan.etaLabel} • Toplam öneri: {reorderPlan.totalUnits} adet
+            </div>
+
+            {reorderPlan.rows.length === 0 ? (
+              <div className="text-sm text-slate-600 dark:text-slate-300">Sipariş önerisi yok.</div>
+            ) : (
+              <div className="w-full overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
+                    <tr className="border-b border-slate-200/70 dark:border-slate-800/70">
+                      <th className="px-3 py-3 text-left font-semibold">SKU</th>
+                      <th className="px-3 py-3 text-left font-semibold">Ürün</th>
+                      <th className="px-3 py-3 text-right font-semibold">DIR</th>
+                      <th className="px-3 py-3 text-right font-semibold">Öneri</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reorderPlan.rows.map((r) => (
+                      <tr key={r.p.id} className="border-b border-slate-200/70 dark:border-slate-800/70">
+                        <td className="px-3 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">
+                          {r.p.sku}
+                        </td>
+                        <td className="px-3 py-3 font-medium">{r.p.name}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{dirLabel(r.dir)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums font-semibold">
+                          {r.recommendedUnits}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Not: Bu öneriler dummy veriye dayalıdır. Gerçek tedarik/MOQ/lot bilgileri entegrasyon sonrası eklenecek.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>Liquidation Mode (MVP)</CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={liquidationPlan.rows.length === 0}
+                onClick={() => {
+                  const rows = liquidationPlan.rows.map((r) => ({
+                    sku: r.sku,
+                    urun: r.name,
+                    stok: r.stock,
+                    velocity: r.velocity,
+                    dir_gun: r.dir == null ? "" : Math.round(r.dir),
+                    fazla_stok_adet: r.excessUnits,
+                    onerilen_indirim: r.discountRange,
+                    stil: r.kind,
+                  }));
+                  downloadCsv("netprofithub_liquidation_plani.csv", toCsv(rows));
+                }}
+              >
+                CSV İndir
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-slate-600 dark:text-slate-300">
+              DIR ≥ {effectivePolicy.overstockThresholdDays} gün olan ürünlerde fazla stok için indirim kampanyası önerir.
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Toplam fazla stok: {liquidationPlan.totalExcess} adet • Hedef kapsama: {effectivePolicy.targetCoverageDays} gün
+            </div>
+
+            {liquidationPlan.rows.length === 0 ? (
+              <div className="text-sm text-slate-600 dark:text-slate-300">Liquidation adayı yok.</div>
+            ) : (
+              <div className="w-full overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
+                    <tr className="border-b border-slate-200/70 dark:border-slate-800/70">
+                      <th className="px-3 py-3 text-left font-semibold">SKU</th>
+                      <th className="px-3 py-3 text-left font-semibold">Ürün</th>
+                      <th className="px-3 py-3 text-right font-semibold">DIR</th>
+                      <th className="px-3 py-3 text-right font-semibold">Fazla</th>
+                      <th className="px-3 py-3 text-right font-semibold">İndirim</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liquidationPlan.rows.map((r) => (
+                      <tr key={r.sku} className="border-b border-slate-200/70 dark:border-slate-800/70">
+                        <td className="px-3 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">
+                          {r.sku}
+                        </td>
+                        <td className="px-3 py-3 font-medium">{r.name}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{dirLabel(r.dir)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums font-semibold">{r.excessUnits}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">
+                          <Badge variant={r.kind === "agresif" ? "warning" : "default"}>
+                            {r.discountRange}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Not: İndirim aralığı DIR bazlı heuristik bir tahmindir. Gerçek kâr/marj (COGS + iade + kargo) ile son aşamada optimize edilecek.
             </div>
           </CardContent>
         </Card>
