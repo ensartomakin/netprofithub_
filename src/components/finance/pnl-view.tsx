@@ -209,6 +209,7 @@ export function PnlView() {
   const tx = (dailyQuery.data ?? []).reduce((acc, r) => acc + Number(r.transactions ?? 0), 0);
   const shippingCost = tx * overrides.shippingCostPerOrder;
   const marketplaceFees = s.grossSales * overrides.marketplaceFeeRate;
+  const returnCosts = Math.abs(s.returns) * overrides.returnCostRate;
   const netProfit = calculateNetProfit({
     grossSales: s.grossSales,
     cogs: s.cogsTotal,
@@ -216,12 +217,14 @@ export function PnlView() {
     adSpend: s.adSpend,
     marketplaceFees,
     returns: s.returns,
+    returnCosts,
     fixedExpenses: s.expensesTotal,
   });
 
   const pnlRows = [
     { label: "Brüt Satış", value: s.grossSales },
     { label: "İadeler", value: -Math.abs(s.returns) },
+    { label: "İade Maliyeti (tahmini)", value: -Math.abs(returnCosts) },
     { label: "COGS (MVP)", value: -Math.abs(s.cogsTotal) },
     { label: "Reklam Harcaması", value: -Math.abs(s.adSpend) },
     { label: "Kargo (tahmini)", value: -Math.abs(shippingCost) },
@@ -364,7 +367,7 @@ export function PnlView() {
           <CardTitle>Profit Ayarları (MVP)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <label className="block">
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 Kargo Maliyeti / Sipariş (₺)
@@ -387,6 +390,17 @@ export function PnlView() {
                 onChange={(e) =>
                   setOverrides({ marketplaceFeeRate: Number(e.target.value || 0) / 100 })
                 }
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                İade Maliyeti Oranı (%)
+              </span>
+              <Input
+                type="number"
+                step="0.1"
+                value={Math.round(overrides.returnCostRate * 1000) / 10}
+                onChange={(e) => setOverrides({ returnCostRate: Number(e.target.value || 0) / 100 })}
               />
             </label>
             <div className="flex items-end justify-end">

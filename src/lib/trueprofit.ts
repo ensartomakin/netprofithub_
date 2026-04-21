@@ -5,6 +5,7 @@ export type ProfitInputs = {
   adSpend: number;
   marketplaceFees: number;
   returns: number;
+  returnCosts?: number;
   fixedExpenses: number;
 };
 
@@ -16,12 +17,19 @@ export function calculateNetProfit(inputs: ProfitInputs) {
     adSpend,
     marketplaceFees,
     returns,
+    returnCosts = 0,
     fixedExpenses,
   } = inputs;
 
   return (
     grossSales -
-    (cogs + shipping + adSpend + marketplaceFees + returns + fixedExpenses)
+    (cogs +
+      shipping +
+      adSpend +
+      marketplaceFees +
+      returns +
+      returnCosts +
+      fixedExpenses)
   );
 }
 
@@ -34,4 +42,3 @@ export function calculateMer(revenue: number, adSpend: number) {
   if (revenue <= 0) return null;
   return adSpend / revenue;
 }
-

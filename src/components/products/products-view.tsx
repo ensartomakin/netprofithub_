@@ -169,12 +169,17 @@ export function ProductsView() {
   const enriched = useMemo(() => {
     const policy = loadInventoryPolicy(storeId);
     const totalAdSpend = Number(summaryQuery.data?.adSpend ?? 0);
+    const totalReturns = Math.abs(Number(summaryQuery.data?.returns ?? 0));
     const totalRevenueNet =
       Array.from(profitBySku.values()).reduce((acc, r) => acc + Number(r.revenueNet ?? 0), 0) || 0;
+    const totalReturnedRevenue =
+      Array.from(profitBySku.values()).reduce((acc, r) => acc + Number(r.revenueReturned ?? 0), 0) ||
+      0;
 
     const tx = (dailyQuery.data ?? []).reduce((acc, r) => acc + Number(r.transactions ?? 0), 0);
     const shippingTotal = tx * Number(overrides.shippingCostPerOrder ?? 0);
     const feesTotal = totalRevenueNet * Number(overrides.marketplaceFeeRate ?? 0);
+    const returnCostsTotal = totalReturns * Number(overrides.returnCostRate ?? 0);
 
     return rows
       .map((p) => {
@@ -212,15 +217,20 @@ export function ProductsView() {
           overstock && !p.dnr ? `${discountMin}–${discountMax}%` : null;
 
         const revenueShare = totalRevenueNet > 0 ? revenueNet / totalRevenueNet : 0;
+        const returnedShare =
+          totalReturnedRevenue > 0 ? revenueReturned / totalReturnedRevenue : 0;
         const allocatedAdSpend = totalAdSpend * revenueShare;
         const allocatedShipping = shippingTotal * revenueShare;
         const allocatedFees = feesTotal * revenueShare;
+        const allocatedReturnCosts = returnCostsTotal * returnedShare;
         const totalProfitTrue =
           revenueNet - units * cogs - allocatedAdSpend - allocatedShipping - allocatedFees;
-        const marginTrue = safeDivide(totalProfitTrue, revenueNet);
+        const totalProfitTrueWithReturns = totalProfitTrue - allocatedReturnCosts;
+        const marginTrueWithReturns = safeDivide(totalProfitTrueWithReturns, revenueNet);
 
-        const totalProfit = profitMode === "true" ? totalProfitTrue : totalProfitCogs;
-        const margin = profitMode === "true" ? marginTrue : marginCogs;
+        const totalProfit =
+          profitMode === "true" ? totalProfitTrueWithReturns : totalProfitCogs;
+        const margin = profitMode === "true" ? marginTrueWithReturns : marginCogs;
 
         return {
           product: p,
@@ -235,10 +245,11 @@ export function ProductsView() {
           margin,
           totalProfit,
           totalProfitCogs,
-          totalProfitTrue,
+          totalProfitTrue: totalProfitTrueWithReturns,
           allocatedAdSpend,
           allocatedShipping,
           allocatedFees,
+          allocatedReturnCosts,
           dir,
           critical,
           overstock,
@@ -262,12 +273,14 @@ export function ProductsView() {
     dailyQuery.data,
     filter,
     overrides.marketplaceFeeRate,
+    overrides.returnCostRate,
     overrides.shippingCostPerOrder,
     profitBySku,
     profitMode,
     rows,
     storeId,
     summaryQuery.data?.adSpend,
+    summaryQuery.data?.returns,
   ]);
 
   const stats = useMemo(() => {

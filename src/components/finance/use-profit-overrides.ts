@@ -5,11 +5,13 @@ import { useMemo, useSyncExternalStore } from "react";
 export type ProfitOverrides = {
   shippingCostPerOrder: number;
   marketplaceFeeRate: number; // 0..1 (e.g. 0.12)
+  returnCostRate: number; // 0..1 (e.g. 0.08) extra cost over refunded revenue
 };
 
 const DEFAULTS: ProfitOverrides = {
   shippingCostPerOrder: 35,
   marketplaceFeeRate: 0.12,
+  returnCostRate: 0.06,
 };
 
 function keyFor(storeId: string) {
@@ -23,9 +25,11 @@ function clamp(n: number, min: number, max: number) {
 function normalize(input: Partial<ProfitOverrides>): ProfitOverrides {
   const shippingCostPerOrder = Number(input.shippingCostPerOrder ?? DEFAULTS.shippingCostPerOrder);
   const marketplaceFeeRate = Number(input.marketplaceFeeRate ?? DEFAULTS.marketplaceFeeRate);
+  const returnCostRate = Number(input.returnCostRate ?? DEFAULTS.returnCostRate);
   return {
     shippingCostPerOrder: Number.isFinite(shippingCostPerOrder) ? clamp(shippingCostPerOrder, 0, 1000) : DEFAULTS.shippingCostPerOrder,
     marketplaceFeeRate: Number.isFinite(marketplaceFeeRate) ? clamp(marketplaceFeeRate, 0, 0.5) : DEFAULTS.marketplaceFeeRate,
+    returnCostRate: Number.isFinite(returnCostRate) ? clamp(returnCostRate, 0, 0.5) : DEFAULTS.returnCostRate,
   };
 }
 

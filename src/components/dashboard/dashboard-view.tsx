@@ -275,6 +275,7 @@ export function DashboardView() {
     const shippingCost = tx * Number(overrides.shippingCostPerOrder ?? 0);
     const marketplaceFees =
       summary.grossSales * Number(overrides.marketplaceFeeRate ?? 0);
+    const returnCosts = Math.abs(summary.returns) * Number(overrides.returnCostRate ?? 0);
     return calculateNetProfit({
       grossSales: summary.grossSales,
       cogs: summary.cogsTotal,
@@ -282,9 +283,16 @@ export function DashboardView() {
       adSpend: summary.adSpend,
       marketplaceFees,
       returns: summary.returns,
+      returnCosts,
       fixedExpenses: summary.expensesTotal,
     });
-  }, [dailyMetricsQuery.data, overrides.marketplaceFeeRate, overrides.shippingCostPerOrder, summary]);
+  }, [
+    dailyMetricsQuery.data,
+    overrides.marketplaceFeeRate,
+    overrides.returnCostRate,
+    overrides.shippingCostPerOrder,
+    summary,
+  ]);
 
   const roas = useMemo(() => {
     if (!summary) return null;
