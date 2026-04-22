@@ -16,6 +16,8 @@ import { fetchDailyMetrics } from "@/lib/queries/dashboard";
 import { useProfitOverrides } from "@/components/finance/use-profit-overrides";
 import { downloadCsv, toCsv } from "@/lib/csv";
 import { toLocalISODate } from "@/lib/date";
+import { useExpenseRules } from "@/components/finance/use-expense-rules";
+import { calculateExpenseTotalsForRange, calculateRecurringAllocationForExpense } from "@/lib/expenses/calc";
 import {
   Bar,
   BarChart,
@@ -24,6 +26,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Cell,
 } from "recharts";
 
 function formatCurrencyTRY(value: number) {
@@ -54,6 +57,11 @@ export function PnlView() {
   const { storeId, dateRange } = useAppState();
   const qc = useQueryClient();
   const { overrides, setOverrides, reset } = useProfitOverrides(storeId);
+  const { rules, addRule, toggleRule, deleteRule } = useExpenseRules(storeId);
+
+  const [ruleCategory, setRuleCategory] = useState("Kira");
+  const [ruleType, setRuleType] = useState<"monthly_fixed" | "revenue_rate">("monthly_fixed");
+  const [ruleValue, setRuleValue] = useState<number>(0);
 
   const summaryQuery = useQuery({
     queryKey: [
@@ -142,12 +150,110 @@ export function PnlView() {
 
   const expenseByCategory = useMemo(() => {
     const rows = expensesQuery.data ?? [];
-    const map = new Map<string, number>();
-    for (const e of rows) map.set(e.category, (map.get(e.category) ?? 0) + e.amount);
-    return Array.from(map.entries())
-      .map(([category, amount]) => ({ category, amount }))
-      .sort((a, b) => b.amount - a.amount);
-  }, [expensesQuery.data]);
+    const res = calculateExpenseTotalsForRange({
+      expenses: rows.map((e) => ({
+        category: e.category,
+        amount: e.amount,
+        effective_date: e.effective_date,
+        recurring_status: e.recurring_status,
+      })),
+      rules,
+      grossSales: summaryQuery.data?.grossSales ?? 0,
+      from: dateRange.from,
+      toExclusive: dateRange.to,
+    });
+    return res.byCategory;
+  }, [dateRange.from, dateRange.to, expensesQuery.data, rules, summaryQuery.data?.grossSales]);
+
+  const expenseTotals = useMemo(() => {
+    const rows = expensesQuery.data ?? [];
+    return calculateExpenseTotalsForRange({
+      expenses: rows.map((e) => ({
+        category: e.category,
+        amount: e.amount,
+        effective_date: e.effective_date,
+        recurring_status: e.recurring_status,
+      })),
+      rules,
+      grossSales: summaryQuery.data?.grossSales ?? 0,
+      from: dateRange.from,
+      toExclusive: dateRange.to,
+    });
+  }, [dateRange.from, dateRange.to, expensesQuery.data, rules, summaryQuery.data?.grossSales]);
+
+  const derived = useMemo(() => {
+    const s = summaryQuery.data;
+    const daily = dailyQuery.data;
+    if (!s || !daily) return null;
+    const tx = (daily ?? []).reduce((acc, r) => acc + Number(r.transactions ?? 0), 0);
+    const shippingCost = tx * overrides.shippingCostPerOrder;
+    const marketplaceFees = s.grossSales * overrides.marketplaceFeeRate;
+    const returnCosts = Math.abs(s.returns) * overrides.returnCostRate;
+    const fixedExpenses = expenseTotals.total;
+    const netProfit = calculateNetProfit({
+      grossSales: s.grossSales,
+      cogs: s.cogsTotal,
+      shipping: shippingCost,
+      adSpend: s.adSpend,
+      marketplaceFees,
+      returns: s.returns,
+      returnCosts,
+      fixedExpenses,
+    });
+
+    const pnlRows = [
+      { label: "Brüt Satış", value: s.grossSales },
+      { label: "İadeler", value: -Math.abs(s.returns) },
+      { label: "İade Maliyeti (tahmini)", value: -Math.abs(returnCosts) },
+      { label: "COGS (MVP)", value: -Math.abs(s.cogsTotal) },
+      { label: "Reklam Harcaması", value: -Math.abs(s.adSpend) },
+      { label: "Kargo (tahmini)", value: -Math.abs(shippingCost) },
+      { label: "Pazaryeri Komisyonu (tahmini)", value: -Math.abs(marketplaceFees) },
+      { label: "Sabit Giderler", value: -Math.abs(fixedExpenses) },
+      { label: "Net Kâr", value: netProfit },
+    ];
+
+    const steps = pnlRows.slice(0, pnlRows.length - 1);
+    let current = 0;
+    const points = steps.map((r, idx) => {
+      const start = current;
+      const end = idx === 0 ? r.value : current + r.value;
+      current = end;
+      return {
+        label: r.label,
+        base: Math.min(start, end),
+        delta: Math.abs(end - start),
+        value: idx === 0 ? r.value : r.value,
+        end,
+      };
+    });
+    const net = pnlRows[pnlRows.length - 1];
+    points.push({
+      label: net.label,
+      base: 0,
+      delta: Math.abs(net.value),
+      value: net.value,
+      end: net.value,
+    });
+
+    return {
+      tx,
+      shippingCost,
+      marketplaceFees,
+      returnCosts,
+      fixedExpenses,
+      netProfit,
+      pnlRows,
+      waterfall: points,
+    };
+  }, [
+    dailyQuery.data,
+    expenseTotals.total,
+    overrides.marketplaceFeeRate,
+    overrides.returnCostRate,
+    overrides.shippingCostPerOrder,
+    summaryQuery.data,
+  ]);
 
   const chartPoints = useMemo(() => {
     const pts = seriesQuery.data ?? [];
@@ -206,32 +312,10 @@ export function PnlView() {
   }
 
   const s = summaryQuery.data!;
-  const tx = (dailyQuery.data ?? []).reduce((acc, r) => acc + Number(r.transactions ?? 0), 0);
-  const shippingCost = tx * overrides.shippingCostPerOrder;
-  const marketplaceFees = s.grossSales * overrides.marketplaceFeeRate;
-  const returnCosts = Math.abs(s.returns) * overrides.returnCostRate;
-  const netProfit = calculateNetProfit({
-    grossSales: s.grossSales,
-    cogs: s.cogsTotal,
-    shipping: shippingCost,
-    adSpend: s.adSpend,
-    marketplaceFees,
-    returns: s.returns,
-    returnCosts,
-    fixedExpenses: s.expensesTotal,
-  });
-
-  const pnlRows = [
-    { label: "Brüt Satış", value: s.grossSales },
-    { label: "İadeler", value: -Math.abs(s.returns) },
-    { label: "İade Maliyeti (tahmini)", value: -Math.abs(returnCosts) },
-    { label: "COGS (MVP)", value: -Math.abs(s.cogsTotal) },
-    { label: "Reklam Harcaması", value: -Math.abs(s.adSpend) },
-    { label: "Kargo (tahmini)", value: -Math.abs(shippingCost) },
-    { label: "Pazaryeri Komisyonu (tahmini)", value: -Math.abs(marketplaceFees) },
-    { label: "Sabit Giderler", value: -Math.abs(s.expensesTotal) },
-    { label: "Net Kâr", value: netProfit },
-  ];
+  const netProfit = derived?.netProfit ?? 0;
+  const fixedExpenses = derived?.fixedExpenses ?? 0;
+  const waterfall = derived?.waterfall ?? [];
+  const pnlRows = derived?.pnlRows ?? [];
 
   return (
     <div className="space-y-6">
@@ -274,7 +358,7 @@ export function PnlView() {
             <CardTitle>Sabit Gider</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrencyTRY(s.expensesTotal)}</div>
+            <div className="text-2xl font-semibold">{formatCurrencyTRY(fixedExpenses)}</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               `expenses` tablosu + demo girişleri
             </div>
@@ -364,6 +448,77 @@ export function PnlView() {
 
       <Card>
         <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>Kâr Köprüsü (Waterfall)</CardTitle>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                  const rows = waterfall.map((w) => ({
+                    step: w.label,
+                    delta_try: Math.round(w.value),
+                    end_try: Math.round(w.end),
+                  }));
+                  downloadCsv("netprofithub_pnl_waterfall.csv", toCsv(rows));
+                }}
+            >
+              CSV İndir
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="h-[320px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={waterfall} barCategoryGap={14}>
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatCompact(Number(v))} />
+              <Tooltip
+                contentStyle={{
+                  background: "rgba(2,6,23,0.9)",
+                  border: "1px solid rgba(148,163,184,0.25)",
+                  borderRadius: 12,
+                  color: "white",
+                }}
+                formatter={(value: unknown, name: string, props: unknown) => {
+                  const v = Number(value ?? 0);
+                  if (name === "delta") {
+                    const p = props as { payload?: { label?: string; value?: number } } | null;
+                    const label = String(p?.payload?.label ?? "");
+                    const raw = Number(p?.payload?.value ?? 0);
+                    const sign = label === "Brüt Satış" ? 1 : raw >= 0 ? 1 : -1;
+                    return [formatCurrencyTRY(sign * v), "Değişim"];
+                  }
+                  if (name === "end") return [formatCurrencyTRY(v), "Kümülatif"];
+                  return [formatCurrencyTRY(v), name];
+                }}
+              />
+              <Bar dataKey="base" stackId="a" fill="rgba(0,0,0,0)" />
+              <Bar dataKey="delta" stackId="a" radius={[6, 6, 0, 0]}>
+                {waterfall.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      entry.label === "Brüt Satış"
+                        ? "#60a5fa"
+                        : entry.label === "Net Kâr"
+                          ? entry.value >= 0
+                            ? "#10b981"
+                            : "#ef4444"
+                          : entry.value < 0
+                            ? "#ef4444"
+                            : "#10b981"
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Profit Ayarları (MVP)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -413,6 +568,114 @@ export function PnlView() {
             Bu ayarlar tarayıcıda saklanır (localStorage). Supabase’e kaydetme en son aşamada açılacak.
             {" "}Gerçek kargo/komisyon kalemleri entegrasyonlar tamamlandığında API’den çekilecek.
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Gider Kuralları (MVP)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-4 items-end">
+            <label className="block">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Kategori</span>
+              <Input value={ruleCategory} onChange={(e) => setRuleCategory(e.target.value)} placeholder="Örn: Depo" />
+            </label>
+            <label className="block">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Kural</span>
+              <select
+                value={ruleType}
+                onChange={(e) => setRuleType(e.target.value as "monthly_fixed" | "revenue_rate")}
+                className="mt-1 h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+              >
+                <option value="monthly_fixed">Aylık Sabit (₺)</option>
+                <option value="revenue_rate">Ciro Oranı (%)</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Değer ({ruleType === "revenue_rate" ? "%" : "₺"})
+              </span>
+              <Input
+                type="number"
+                step="1"
+                value={Number.isFinite(ruleValue) ? ruleValue : 0}
+                onChange={(e) => setRuleValue(Number(e.target.value || 0))}
+              />
+            </label>
+            <div className="flex items-end justify-end">
+              <Button
+                type="button"
+                onClick={() => {
+                  const v = Number(ruleValue ?? 0);
+                  if (!Number.isFinite(v) || v <= 0) return;
+                  addRule({
+                    category: ruleCategory.trim() || "Diğer",
+                    type: ruleType,
+                    value: ruleType === "revenue_rate" ? v / 100 : v,
+                  });
+                  setRuleValue(0);
+                }}
+              >
+                Kural Ekle
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Kurallar, bu dönemin sabit giderlerine otomatik eklenir. (Demo/MVP: entegrasyon sonrası gerçek muhasebe akışıyla güncellenecek.)
+          </div>
+
+          <Table>
+            <THead>
+              <TRow className="border-b-0">
+                <TH>Kategori</TH>
+                <TH>Kural</TH>
+                <TH className="text-right">Değer</TH>
+                <TH className="text-right">Bu Dönem Etkisi</TH>
+                <TH>Durum</TH>
+                <TH className="text-right"> </TH>
+              </TRow>
+            </THead>
+            <tbody>
+              {rules.map((r) => {
+                const amount = calculateExpenseTotalsForRange({
+                  expenses: [],
+                  rules: [r],
+                  grossSales: s.grossSales,
+                  from: dateRange.from,
+                  toExclusive: dateRange.to,
+                }).total;
+                return (
+                  <TRow key={r.id}>
+                    <TD className="font-medium">{r.category}</TD>
+                    <TD className="text-slate-600 dark:text-slate-300">
+                      {r.type === "monthly_fixed" ? "Aylık Sabit" : "Ciro Oranı"}
+                    </TD>
+                    <TD className="text-right tabular-nums">
+                      {r.type === "monthly_fixed"
+                        ? formatCurrencyTRY(r.value)
+                        : `${Math.round(r.value * 1000) / 10}%`}
+                    </TD>
+                    <TD className="text-right tabular-nums">{formatCurrencyTRY(amount)}</TD>
+                    <TD>
+                      <button type="button" className="inline-flex" onClick={() => toggleRule(r.id)}>
+                        {r.enabled ? <Badge variant="success">Aktif</Badge> : <Badge variant="default">Pasif</Badge>}
+                      </button>
+                    </TD>
+                    <TD className="text-right">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => deleteRule(r.id)}>
+                        Sil
+                      </Button>
+                    </TD>
+                  </TRow>
+                );
+              })}
+            </tbody>
+          </Table>
+          {rules.length === 0 && (
+            <div className="text-sm text-slate-600 dark:text-slate-300">Kural yok.</div>
+          )}
         </CardContent>
       </Card>
 
@@ -501,6 +764,7 @@ export function PnlView() {
                   <TH>Tarih</TH>
                   <TH>Kategori</TH>
                   <TH className="text-right">Tutar</TH>
+                  <TH className="text-right">Dönem Payı</TH>
                   <TH>Durum</TH>
                   <TH className="text-right"> </TH>
                 </TRow>
@@ -511,6 +775,22 @@ export function PnlView() {
                     <TD className="tabular-nums">{e.effective_date}</TD>
                     <TD className="font-medium">{e.category}</TD>
                     <TD className="text-right tabular-nums">{formatCurrencyTRY(e.amount)}</TD>
+                    <TD className="text-right tabular-nums">
+                      {e.recurring_status
+                        ? formatCurrencyTRY(
+                            calculateRecurringAllocationForExpense({
+                              expense: {
+                                category: e.category,
+                                amount: e.amount,
+                                effective_date: e.effective_date,
+                                recurring_status: e.recurring_status,
+                              },
+                              from: dateRange.from,
+                              toExclusive: dateRange.to,
+                            })
+                          )
+                        : "—"}
+                    </TD>
                     <TD>
                       {e.recurring_status ? (
                         <Badge variant="warning">Tekrarlı</Badge>

@@ -58,7 +58,11 @@ export async function fetchExpenses(params: {
   if (isDemoMode()) {
     const base = demoExpenses
       .filter((e) => e.store_id === storeId)
-      .filter((e) => e.effective_date >= fromDate && e.effective_date <= toDate)
+      .filter((e) => {
+        const recurring = Boolean(e.recurring_status ?? false);
+        if (recurring) return String(e.effective_date) <= toDate;
+        return String(e.effective_date) >= fromDate && String(e.effective_date) <= toDate;
+      })
       .map((e) => ({
         id: e.id,
         category: e.category,
@@ -66,9 +70,11 @@ export async function fetchExpenses(params: {
         effective_date: e.effective_date,
         recurring_status: Boolean(e.recurring_status ?? false),
       }));
-    const extra = loadDemoExtra(storeId).filter(
-      (e) => e.effective_date >= fromDate && e.effective_date <= toDate
-    );
+    const extra = loadDemoExtra(storeId).filter((e) => {
+      const recurring = Boolean(e.recurring_status ?? false);
+      if (recurring) return String(e.effective_date) <= toDate;
+      return String(e.effective_date) >= fromDate && String(e.effective_date) <= toDate;
+    });
     return [...base, ...extra].sort((a, b) => b.effective_date.localeCompare(a.effective_date));
   }
 
@@ -77,21 +83,25 @@ export async function fetchExpenses(params: {
     .from("expenses")
     .select("id,category,amount,effective_date,recurring_status")
     .eq("store_id", storeId)
-    .gte("effective_date", fromDate)
     .lte("effective_date", toDate)
     .order("effective_date", { ascending: false });
   if (error) throw error;
 
-  return (data ?? []).map((row) => {
-    const r = asRecord(row);
-    return {
-      id: String(r.id ?? ""),
-      category: String(r.category ?? ""),
-      amount: Number(r.amount ?? 0),
-      effective_date: String(r.effective_date ?? ""),
-      recurring_status: Boolean(r.recurring_status ?? false),
-    } satisfies ExpenseRow;
-  });
+  return (data ?? [])
+    .map((row) => {
+      const r = asRecord(row);
+      return {
+        id: String(r.id ?? ""),
+        category: String(r.category ?? ""),
+        amount: Number(r.amount ?? 0),
+        effective_date: String(r.effective_date ?? ""),
+        recurring_status: Boolean(r.recurring_status ?? false),
+      } satisfies ExpenseRow;
+    })
+    .filter((row) => {
+      if (row.recurring_status) return true;
+      return row.effective_date >= fromDate && row.effective_date <= toDate;
+    });
 }
 
 export async function createExpense(params: {

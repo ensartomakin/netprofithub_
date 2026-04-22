@@ -8,6 +8,8 @@ import {
   demoSpends,
 } from "@/lib/demo/data";
 import { toLocalISODate } from "@/lib/date";
+import { calculateExpenseTotalsForRange } from "@/lib/expenses/calc";
+import { loadExpenseRules } from "@/lib/expense-rules";
 
 export type DashboardSummary = {
   grossSales: number;
@@ -24,9 +26,37 @@ function sum(values: number[]) {
   return values.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0);
 }
 
+function asRecord(v: unknown): Record<string, unknown> {
+  if (!v || typeof v !== "object") return {};
+  return v as Record<string, unknown>;
+}
+
 function toIsoDate(d: Date) {
   // YYYY-MM-DD
   return toLocalISODate(d);
+}
+
+function loadDemoExtraExpenses(storeId: string) {
+  if (typeof window === "undefined") return [] as Array<{
+    category: string;
+    amount: number;
+    effective_date: string;
+    recurring_status: boolean;
+  }>;
+  try {
+    const raw = window.localStorage.getItem(`nph_demo_expenses:${storeId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed as Array<{
+      category: string;
+      amount: number;
+      effective_date: string;
+      recurring_status: boolean;
+    }>;
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchDashboardSummary(params: {
@@ -67,11 +97,26 @@ export async function fetchDashboardSummary(params: {
     }
     const adSpend = sum(Object.values(platformSpend));
 
-    const expenses = demoExpenses
+    const expenses = [
+      ...demoExpenses
       .filter((e) => e.store_id === storeId)
-      .filter((e) => e.effective_date >= fromDate && e.effective_date <= toDate);
+      .map((e) => ({
+        category: e.category,
+        amount: e.amount,
+        effective_date: e.effective_date,
+        recurring_status: Boolean(e.recurring_status ?? false),
+      })),
+      ...loadDemoExtraExpenses(storeId),
+    ];
 
-    const expensesTotal = sum(expenses.map((e) => Number(e.amount ?? 0)));
+    const rules = loadExpenseRules(storeId);
+    const expensesTotal = calculateExpenseTotalsForRange({
+      expenses,
+      rules,
+      grossSales,
+      from,
+      toExclusive: to,
+    }).total;
 
     const items = demoOrderItems
       .filter((x) => x.store_id === storeId)
@@ -142,13 +187,27 @@ export async function fetchDashboardSummary(params: {
 
   const { data: expenses, error: expenseError } = await supabase
     .from("expenses")
-    .select("amount,effective_date")
+    .select("amount,effective_date,category,recurring_status")
     .eq("store_id", storeId)
-    .gte("effective_date", fromDate)
     .lte("effective_date", toDate);
   if (expenseError) throw expenseError;
 
-  const expensesTotal = sum((expenses ?? []).map((e) => Number(e.amount ?? 0)));
+  const rules = loadExpenseRules(storeId);
+  const expensesTotal = calculateExpenseTotalsForRange({
+    expenses: (expenses ?? []).map((e) => {
+      const r = asRecord(e);
+      return {
+        category: String(r.category ?? "Diğer"),
+        amount: Number(r.amount ?? 0),
+        effective_date: String(r.effective_date ?? ""),
+        recurring_status: Boolean(r.recurring_status ?? false),
+      };
+    }),
+    rules,
+    grossSales,
+    from,
+    toExclusive: to,
+  }).total;
 
   // COGS: order_items net units * products.cogs (MVP)
   const { data: items, error: itemsError } = await supabase
