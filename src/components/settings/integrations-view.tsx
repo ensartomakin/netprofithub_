@@ -112,9 +112,10 @@ export function IntegrationsView() {
 
   function getTsoftCredsFromState(tsoftValues: Record<string, string>) {
     const baseUrl = tsoftValues.base_url ?? "";
-    const apiKey = tsoftValues.api_key ?? "";
-    const apiSecret = tsoftValues.api_secret ?? "";
-    return { baseUrl, apiKey, apiSecret };
+    // Support both new (api_user/api_pass) and legacy (api_key/api_secret) field names
+    const apiUser = tsoftValues.api_user ?? tsoftValues.api_key ?? "";
+    const apiPass = tsoftValues.api_pass ?? tsoftValues.api_secret ?? "";
+    return { baseUrl, apiUser, apiPass };
   }
 
   async function runSyncDemo(type: "products" | "orders" | "returns", tsoftValues: Record<string, string>) {
@@ -128,7 +129,13 @@ export function IntegrationsView() {
       const res = await fetch("/api/integrations/tsoft/fetch-direct", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...creds, type, limit: type === "products" ? 50 : undefined }),
+        body: JSON.stringify({
+          baseUrl: creds.baseUrl,
+          apiUser: creds.apiUser,
+          apiPass: creds.apiPass,
+          type,
+          limit: type === "products" ? 50 : undefined,
+        }),
       });
       const json = (await res.json()) as {
         ok?: boolean; error?: string; count?: number;

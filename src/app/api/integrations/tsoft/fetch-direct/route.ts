@@ -6,41 +6,34 @@ import {
   normalizeTsoftOrders,
   fetchAllTsoftReturns,
   aggregateTsoftReturnedQuantities,
-  diagnose,
   type TsoftCredentials,
 } from "@/lib/integrations/tsoft";
 
 type RequestBody = {
   baseUrl?: string;
-  apiKey?: string;
-  apiSecret?: string;
-  type?: "products" | "orders" | "returns" | "diagnose";
+  // Support both field name conventions
+  apiUser?: string; apiPass?: string;
+  apiKey?: string;  apiSecret?: string;
+  type?: "products" | "orders" | "returns";
   limit?: number;
 };
 
 export async function POST(req: Request) {
   let body: RequestBody = {};
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  try { body = (await req.json()) as RequestBody; }
+  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+
+  const { baseUrl, type = "products", limit } = body;
+  const apiUser = body.apiUser ?? body.apiKey ?? "";
+  const apiPass = body.apiPass ?? body.apiSecret ?? "";
+
+  if (!baseUrl || !apiUser || !apiPass) {
+    return NextResponse.json({ error: "baseUrl, apiUser (veya apiKey), apiPass (veya apiSecret) gerekli" }, { status: 400 });
   }
 
-  const { baseUrl, apiKey, apiSecret, type = "products", limit } = body;
-
-  if (!baseUrl || !apiKey || !apiSecret) {
-    return NextResponse.json({ error: "baseUrl, apiKey, apiSecret gerekli" }, { status: 400 });
-  }
-
-  const creds: TsoftCredentials = { baseUrl, apiKey, apiSecret };
+  const creds: TsoftCredentials = { baseUrl, apiUser, apiPass };
 
   try {
-    if (type === "diagnose") {
-      const results = await diagnose(creds);
-      const working = results.find((r) => r.ok);
-      return NextResponse.json({ ok: true, type: "diagnose", working: working ?? null, results });
-    }
-
     if (type === "products") {
       const raw = await fetchAllTsoftProducts(creds);
       const normalized = normalizeTsoftProducts(raw);
@@ -68,7 +61,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, type: "returns", count: returns.length, returns });
     }
 
-    return NextResponse.json({ error: "type must be products | orders | returns | diagnose" }, { status: 400 });
+    return NextResponse.json({ error: "type must be products | orders | returns" }, { status: 400 });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Tsoft API hatası" },
