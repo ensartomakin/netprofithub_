@@ -16,8 +16,11 @@ import {
   type IntegrationKey,
 } from "@/lib/queries/integrations";
 import { isDemoMode } from "@/lib/demo/mode";
+import { getSession } from "@/lib/auth/session";
 
 type Draft = Record<string, string>;
+type SyncResult = { synced?: number; syncedOrders?: number; syncedItems?: number; updatedItems?: number; demo?: boolean };
+type SyncState = { status: "idle" | "loading" | "ok" | "error"; message?: string };
 
 function asString(v: unknown) {
   return typeof v === "string" ? v : v == null ? "" : String(v);
@@ -88,6 +91,44 @@ export function IntegrationsView() {
       await qc.invalidateQueries({ queryKey: ["stores"] });
     },
   });
+
+  const [syncStates, setSyncStates] = useState<Record<string, SyncState>>({});
+
+  async function runSync(endpoint: string, label: string) {
+    const key = endpoint;
+    setSyncStates((prev: Record<string, SyncState>) => ({ ...prev, [key]: { status: "loading" } }));
+    try {
+      const session = await getSession();
+      const token = session?.access_token ?? "";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ storeId }),
+      });
+      const json = (await res.json()) as SyncResult & { error?: string };
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      const parts: string[] = [];
+      if (json.synced != null) parts.push(`${json.synced} ürün`);
+      if (json.syncedOrders != null) parts.push(`${json.syncedOrders} sipariş`);
+      if (json.syncedItems != null) parts.push(`${json.syncedItems} kalem`);
+      if (json.updatedItems != null) parts.push(`${json.updatedItems} iade güncellendi`);
+      if (json.demo) parts.push("(demo)");
+      setSyncStates((prev: Record<string, SyncState>) => ({
+        ...prev,
+        [key]: { status: "ok", message: parts.join(", ") || label + " tamam" },
+      }));
+      await qc.invalidateQueries({ queryKey: ["products", storeId] });
+      await qc.invalidateQueries({ queryKey: ["orders", storeId] });
+    } catch (e) {
+      setSyncStates((prev: Record<string, SyncState>) => ({
+        ...prev,
+        [key]: { status: "error", message: e instanceof Error ? e.message : "Hata" },
+      }));
+    }
+  }
 
   const grouped = useMemo(() => {
     const map: Record<IntegrationCatalogItem["category"], IntegrationCatalogItem[]> = {
@@ -187,7 +228,7 @@ export function IntegrationsView() {
               <Badge variant="default">MVP</Badge>
             </div>
             <div className="pt-2 text-xs text-slate-500 dark:text-slate-400">
-              Gerçek veri çekme/senkron adımı en sonda aktive edilecek.
+              Tsoft bağlandıktan sonra senkronize et butonuyla veri çekin.
             </div>
           </CardContent>
         </Card>
@@ -269,6 +310,42 @@ export function IntegrationsView() {
                       )}
                     </div>
 
+                    {item.key === "tsoft" && connected && (
+                      <div className="rounded-xl border border-blue-200/60 dark:border-blue-800/60 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-3">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                          Veri Senkronizasyonu
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { endpoint: "/api/integrations/tsoft/sync-store", label: "Ürünler" },
+                            { endpoint: "/api/integrations/tsoft/sync-orders-store", label: "Siparişler" },
+                            { endpoint: "/api/integrations/tsoft/sync-refunds-store", label: "İadeler" },
+                          ].map(({ endpoint, label }) => {
+                            const s = syncStates[endpoint] ?? { status: "idle" };
+                            return (
+                              <div key={endpoint} className="flex flex-col gap-1">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={s.status === "loading"}
+                                  onClick={() => runSync(endpoint, label)}
+                                >
+                                  {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
+                                </Button>
+                                {s.status === "ok" && (
+                                  <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
+                                )}
+                                {s.status === "error" && (
+                                  <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {isOpen && (
                       <div className="rounded-xl border border-slate-200/70 dark:border-slate-800/70 p-4 space-y-3">
                         <div className="grid gap-3 md:grid-cols-2">
@@ -296,7 +373,7 @@ export function IntegrationsView() {
 
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-xs text-slate-500 dark:text-slate-400">
-                            Kayıt: Henüz veri çekilmiyor. (Son adımda API sync aktif edilecek.)
+                            Kayıt: Bilgileri kaydettikten sonra senkronize edin.
                           </div>
                           <Button
                             type="button"
