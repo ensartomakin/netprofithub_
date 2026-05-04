@@ -17,6 +17,17 @@ import {
 } from "@/lib/queries/integrations";
 import { isDemoMode } from "@/lib/demo/mode";
 import { getSession } from "@/lib/auth/session";
+import {
+  saveRealProducts,
+  saveRealOrders,
+  saveRealReturns,
+  clearAllRealData,
+  hasRealProducts,
+  type RealProduct,
+  type RealOrder,
+  type RealOrderItem,
+  type RealReturn,
+} from "@/lib/demo/real-store";
 
 type Draft = Record<string, string>;
 type SyncResult = { synced?: number; syncedOrders?: number; syncedItems?: number; updatedItems?: number; demo?: boolean };
@@ -93,10 +104,61 @@ export function IntegrationsView() {
   });
 
   const [syncStates, setSyncStates] = useState<Record<string, SyncState>>({});
+  const [hasReal, setHasReal] = useState(() => storeId ? hasRealProducts(storeId) : false);
 
-  async function runSync(endpoint: string, label: string) {
+  function setSyncState(key: string, state: SyncState) {
+    setSyncStates((prev: Record<string, SyncState>) => ({ ...prev, [key]: state }));
+  }
+
+  function getTsoftCredsFromState(tsoftValues: Record<string, string>) {
+    const baseUrl = tsoftValues.base_url ?? "";
+    const apiKey = tsoftValues.api_key ?? "";
+    const apiSecret = tsoftValues.api_secret ?? "";
+    return { baseUrl, apiKey, apiSecret };
+  }
+
+  async function runSyncDemo(type: "products" | "orders" | "returns", tsoftValues: Record<string, string>) {
+    const key = type;
+    setSyncState(key, { status: "loading" });
+    try {
+      const creds = getTsoftCredsFromState(tsoftValues);
+      if (!creds.baseUrl || !creds.apiKey || !creds.apiSecret)
+        throw new Error("Tsoft kimlik bilgileri eksik. Lütfen önce kaydedin.");
+
+      const res = await fetch("/api/integrations/tsoft/fetch-direct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...creds, type, limit: type === "products" ? 50 : undefined }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean; error?: string; count?: number;
+        products?: RealProduct[]; orders?: RealOrder[]; items?: RealOrderItem[]; returns?: RealReturn[];
+      };
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+
+      if (type === "products" && json.products) {
+        saveRealProducts(storeId!, json.products);
+        setHasReal(true);
+        setSyncState(key, { status: "ok", message: `${json.count ?? json.products.length} ürün yüklendi` });
+      } else if (type === "orders" && json.orders) {
+        saveRealOrders(storeId!, json.orders, json.items ?? []);
+        setSyncState(key, { status: "ok", message: `${json.orders.length} sipariş yüklendi` });
+      } else if (type === "returns" && json.returns) {
+        saveRealReturns(storeId!, json.returns);
+        setSyncState(key, { status: "ok", message: `${json.returns.length} iade güncellendi` });
+      }
+
+      await qc.invalidateQueries({ queryKey: ["products", storeId] });
+      await qc.invalidateQueries({ queryKey: ["orders", storeId] });
+      await qc.invalidateQueries({ queryKey: ["orderItems", storeId] });
+    } catch (e) {
+      setSyncState(key, { status: "error", message: e instanceof Error ? e.message : "Hata" });
+    }
+  }
+
+  async function runSyncProd(endpoint: string, label: string) {
     const key = endpoint;
-    setSyncStates((prev: Record<string, SyncState>) => ({ ...prev, [key]: { status: "loading" } }));
+    setSyncState(key, { status: "loading" });
     try {
       const session = await getSession();
       const token = session?.access_token ?? "";
@@ -115,19 +177,22 @@ export function IntegrationsView() {
       if (json.syncedOrders != null) parts.push(`${json.syncedOrders} sipariş`);
       if (json.syncedItems != null) parts.push(`${json.syncedItems} kalem`);
       if (json.updatedItems != null) parts.push(`${json.updatedItems} iade güncellendi`);
-      if (json.demo) parts.push("(demo)");
-      setSyncStates((prev: Record<string, SyncState>) => ({
-        ...prev,
-        [key]: { status: "ok", message: parts.join(", ") || label + " tamam" },
-      }));
+      setSyncState(key, { status: "ok", message: parts.join(", ") || label + " tamam" });
       await qc.invalidateQueries({ queryKey: ["products", storeId] });
       await qc.invalidateQueries({ queryKey: ["orders", storeId] });
     } catch (e) {
-      setSyncStates((prev: Record<string, SyncState>) => ({
-        ...prev,
-        [key]: { status: "error", message: e instanceof Error ? e.message : "Hata" },
-      }));
+      setSyncState(key, { status: "error", message: e instanceof Error ? e.message : "Hata" });
     }
+  }
+
+  function handleReset() {
+    if (!storeId) return;
+    clearAllRealData(storeId);
+    setHasReal(false);
+    setSyncStates({});
+    void qc.invalidateQueries({ queryKey: ["products", storeId] });
+    void qc.invalidateQueries({ queryKey: ["orders", storeId] });
+    void qc.invalidateQueries({ queryKey: ["orderItems", storeId] });
   }
 
   const grouped = useMemo(() => {
@@ -312,36 +377,83 @@ export function IntegrationsView() {
 
                     {item.key === "tsoft" && connected && (
                       <div className="rounded-xl border border-blue-200/60 dark:border-blue-800/60 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-3">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                          Veri Senkronizasyonu
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                            Veri Senkronizasyonu
+                            {isDemoMode() && <span className="ml-1 text-amber-600 dark:text-amber-400">(Gerçek API)</span>}
+                          </div>
+                          {hasReal && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleReset}
+                              className="text-xs text-rose-600 hover:text-rose-700"
+                            >
+                              Demo Veriye Dön
+                            </Button>
+                          )}
                         </div>
+
                         <div className="flex flex-wrap gap-2">
-                          {[
-                            { endpoint: "/api/integrations/tsoft/sync-store", label: "Ürünler" },
-                            { endpoint: "/api/integrations/tsoft/sync-orders-store", label: "Siparişler" },
-                            { endpoint: "/api/integrations/tsoft/sync-refunds-store", label: "İadeler" },
-                          ].map(({ endpoint, label }) => {
-                            const s = syncStates[endpoint] ?? { status: "idle" };
-                            return (
-                              <div key={endpoint} className="flex flex-col gap-1">
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  size="sm"
-                                  disabled={s.status === "loading"}
-                                  onClick={() => runSync(endpoint, label)}
-                                >
-                                  {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
-                                </Button>
-                                {s.status === "ok" && (
-                                  <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
-                                )}
-                                {s.status === "error" && (
-                                  <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
-                                )}
-                              </div>
-                            );
-                          })}
+                          {isDemoMode()
+                            ? (
+                              [
+                                { type: "products" as const, label: "Ürünler (50 adet)" },
+                                { type: "orders" as const, label: "Siparişler" },
+                                { type: "returns" as const, label: "İadeler" },
+                              ].map(({ type, label }) => {
+                                const s = syncStates[type] ?? { status: "idle" };
+                                return (
+                                  <div key={type} className="flex flex-col gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      disabled={s.status === "loading"}
+                                      onClick={() => runSyncDemo(type, state?.values ?? {})}
+                                    >
+                                      {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
+                                    </Button>
+                                    {s.status === "ok" && (
+                                      <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
+                                    )}
+                                    {s.status === "error" && (
+                                      <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )
+                            : (
+                              [
+                                { endpoint: "/api/integrations/tsoft/sync-store", label: "Ürünler" },
+                                { endpoint: "/api/integrations/tsoft/sync-orders-store", label: "Siparişler" },
+                                { endpoint: "/api/integrations/tsoft/sync-refunds-store", label: "İadeler" },
+                              ].map(({ endpoint, label }) => {
+                                const s = syncStates[endpoint] ?? { status: "idle" };
+                                return (
+                                  <div key={endpoint} className="flex flex-col gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      disabled={s.status === "loading"}
+                                      onClick={() => runSyncProd(endpoint, label)}
+                                    >
+                                      {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
+                                    </Button>
+                                    {s.status === "ok" && (
+                                      <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
+                                    )}
+                                    {s.status === "error" && (
+                                      <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )
+                          }
                         </div>
                       </div>
                     )}

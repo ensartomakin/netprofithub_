@@ -1,6 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/demo/mode";
 import { demoProducts } from "@/lib/demo/data";
+import { loadRealProducts, hasRealProducts } from "@/lib/demo/real-store";
 
 export type ProductRow = {
   id: string;
@@ -30,6 +31,22 @@ function loadDemoOverrides(): Record<string, DemoProductOverride> {
 
 export async function fetchProducts(params: { storeId: string }) {
   if (isDemoMode()) {
+    // Real Tsoft data takes priority over static demo products
+    if (hasRealProducts(params.storeId)) {
+      const real = loadRealProducts(params.storeId);
+      const overrides = loadDemoOverrides();
+      return real.map((p, i) => ({
+        id: `real-${p.sku}-${i}`,
+        sku: p.sku,
+        name: p.name,
+        stock_level: p.stock_level,
+        velocity: 0,
+        status: overrides[`real-${p.sku}-${i}`]?.status ?? p.status,
+        dnr: overrides[`real-${p.sku}-${i}`]?.dnr ?? (p.dnr ?? false),
+        cogs: overrides[`real-${p.sku}-${i}`]?.cogs ?? (p.cogs ?? 0),
+      })) as unknown as ProductRow[];
+    }
+
     const overrides = loadDemoOverrides();
     return demoProducts
       .filter((p) => p.store_id === params.storeId)
