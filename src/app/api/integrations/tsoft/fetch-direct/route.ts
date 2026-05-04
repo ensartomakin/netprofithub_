@@ -6,6 +6,7 @@ import {
   normalizeTsoftOrders,
   fetchAllTsoftReturns,
   aggregateTsoftReturnedQuantities,
+  tsoftPost,
   type TsoftCredentials,
 } from "@/lib/integrations/tsoft";
 
@@ -13,7 +14,7 @@ type RequestBody = {
   baseUrl?: string;
   apiKey?: string;
   apiSecret?: string;
-  type?: "products" | "orders" | "returns";
+  type?: "products" | "orders" | "returns" | "test";
   limit?: number;
 };
 
@@ -36,6 +37,25 @@ export async function POST(req: Request) {
   const creds: TsoftCredentials = { baseUrl, apiKey, apiSecret };
 
   try {
+    // Diagnostic mode: try common endpoints and report which ones respond
+    if (type === "test") {
+      const candidateEndpoints = [
+        "/product/list", "/products", "/Product/GetList", "/Product/List",
+        "/order/list", "/orders", "/Order/GetList", "/Order/List",
+        "/return/list", "/returns",
+      ];
+      const results: Array<{ endpoint: string; ok: boolean; error?: string; sample?: unknown }> = [];
+      for (const ep of candidateEndpoints) {
+        try {
+          const data = await tsoftPost<unknown>(creds, ep, { Page: 1, PageSize: 1 });
+          results.push({ endpoint: ep, ok: true, sample: data.slice(0, 1) });
+        } catch (e) {
+          results.push({ endpoint: ep, ok: false, error: e instanceof Error ? e.message : String(e) });
+        }
+      }
+      return NextResponse.json({ ok: true, type: "test", results });
+    }
+
     if (type === "products") {
       const raw = await fetchAllTsoftProducts(creds);
       const normalized = normalizeTsoftProducts(raw);
@@ -63,7 +83,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, type: "returns", count: returns.length, returns });
     }
 
-    return NextResponse.json({ error: "type must be products | orders | returns" }, { status: 400 });
+    return NextResponse.json({ error: "type must be products | orders | returns | test" }, { status: 400 });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Tsoft API hatası" },
