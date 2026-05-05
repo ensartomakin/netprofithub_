@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { isDemoMode } from "@/lib/demo/mode";
 import {
   fetchAllTsoftReturns,
   aggregateTsoftReturnedQuantities,
@@ -10,9 +9,6 @@ import {
 type StoreRow = { id: string; platform: string; api_keys: unknown };
 
 export async function GET(req: Request) {
-  if (isDemoMode()) {
-    return NextResponse.json({ ok: true, results: [{ storeId: "demo-store-1", updatedItems: 4, demo: true }] });
-  }
 
   const url = new URL(req.url);
   const secret = url.searchParams.get("secret") ?? "";

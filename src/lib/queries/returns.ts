@@ -1,13 +1,11 @@
-import { isDemoMode } from "@/lib/demo/mode";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { demoOrderItems, demoProducts } from "@/lib/demo/data";
 import { toLocalISODate } from "@/lib/date";
 
 export type ReturnSummary = {
   returnedUnits: number;
-  returnRate: number | null; // returned / (returned + net)
+  returnRate: number | null;
   returnedRevenue: number;
-  estimatedProfitImpact: number; // MVP: -returnedRevenue (COGS netted out by netUnits)
+  estimatedProfitImpact: number;
 };
 
 export type ReturnSkuRow = {
@@ -19,7 +17,7 @@ export type ReturnSkuRow = {
 };
 
 export type ReturnPoint = {
-  date: string; // YYYY-MM-DD
+  date: string;
   returnedUnits: number;
   returnedRevenue: number;
 };
@@ -72,34 +70,8 @@ function estimateReturnedRevenue(it: OrderItemRow) {
   return gross - discountShare;
 }
 
-function buildNameBySku(storeId: string) {
-  const map = new Map<string, string>();
-  for (const p of demoProducts) {
-    if (p.store_id !== storeId) continue;
-    map.set(p.sku, p.name);
-  }
-  return map;
-}
-
 async function fetchItems(params: { storeId: string; from: Date; to: Date }) {
   const { storeId, from, to } = params;
-  if (isDemoMode()) {
-    const fromIso = from.toISOString();
-    const toIso = to.toISOString();
-    return demoOrderItems
-      .filter((x) => x.store_id === storeId)
-      .filter((x) => x.ordered_at >= fromIso && x.ordered_at < toIso)
-      .map((x) => ({
-        sku: x.sku,
-        name: x.name,
-        quantity: x.quantity,
-        unit_price: x.unit_price,
-        discount: x.discount,
-        returned_quantity: x.returned_quantity,
-        ordered_at: x.ordered_at,
-      })) as OrderItemRow[];
-  }
-
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("order_items")
@@ -129,21 +101,13 @@ export async function fetchReturnsSummary(params: { storeId: string; from: Date;
   );
   const returnedRevenue = sum(items.map(estimateReturnedRevenue));
   const returnRate = safeDivide(returnedUnits, returnedUnits + netUnits);
-
-  // MVP: COGS netUnits üzerinden hesaplandığı için, iade kâr etkisini basitçe iade ciro kaybı olarak gösteriyoruz.
   const estimatedProfitImpact = -Math.abs(returnedRevenue);
 
-  return {
-    returnedUnits,
-    returnRate,
-    returnedRevenue,
-    estimatedProfitImpact,
-  } satisfies ReturnSummary;
+  return { returnedUnits, returnRate, returnedRevenue, estimatedProfitImpact } satisfies ReturnSummary;
 }
 
 export async function fetchReturnsBySku(params: { storeId: string; from: Date; to: Date; limit?: number }) {
   const items = await fetchItems(params);
-  const nameBySku = isDemoMode() ? buildNameBySku(params.storeId) : new Map<string, string>();
 
   const map = new Map<
     string,
@@ -158,7 +122,7 @@ export async function fetchReturnsBySku(params: { storeId: string; from: Date; t
         returnedUnits: 0,
         units: 0,
         returnedRevenue: 0,
-        name: String(it.name ?? nameBySku.get(sku) ?? sku),
+        name: String(it.name ?? sku),
       } satisfies { returnedUnits: number; units: number; returnedRevenue: number; name: string });
 
     const qty = Number(it.quantity ?? 0);
@@ -170,7 +134,7 @@ export async function fetchReturnsBySku(params: { storeId: string; from: Date; t
     map.set(sku, row);
   }
 
-  const rows = Array.from(map.entries())
+  return Array.from(map.entries())
     .map(([sku, v]) => ({
       sku,
       name: v.name,
@@ -179,9 +143,8 @@ export async function fetchReturnsBySku(params: { storeId: string; from: Date; t
       returnedRevenue: v.returnedRevenue,
     }))
     .filter((r) => r.returnedUnits > 0)
-    .sort((a, b) => b.returnedRevenue - a.returnedRevenue);
-
-  return rows.slice(0, params.limit ?? 20) as ReturnSkuRow[];
+    .sort((a, b) => b.returnedRevenue - a.returnedRevenue)
+    .slice(0, params.limit ?? 20) as ReturnSkuRow[];
 }
 
 export async function fetchReturnsTimeseries(params: { storeId: string; from: Date; to: Date }) {

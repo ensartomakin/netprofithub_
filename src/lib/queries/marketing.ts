@@ -1,13 +1,11 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { isDemoMode } from "@/lib/demo/mode";
-import { demoSpends } from "@/lib/demo/data";
 import { toLocalISODate } from "@/lib/date";
 
 export type MarketingSpendRow = {
   id: string;
   platform: string;
   spend: number;
-  date: string; // YYYY-MM-DD
+  date: string;
   campaign_name: string | null;
 };
 
@@ -18,24 +16,8 @@ function toIsoDate(d: Date) {
 export async function fetchMarketingSpend(params: {
   storeId: string;
   from: Date;
-  to: Date; // exclusive
+  to: Date;
 }) {
-  if (isDemoMode()) {
-    const fromDate = toIsoDate(params.from);
-    const toInclusive = new Date(params.to);
-    toInclusive.setDate(toInclusive.getDate() - 1);
-    const toDate = toIsoDate(toInclusive);
-    return demoSpends
-      .filter((s) => s.store_id === params.storeId)
-      .filter((s) => s.date >= fromDate && s.date <= toDate)
-      .map((s) => ({
-        id: s.id,
-        platform: s.platform,
-        spend: s.spend,
-        date: s.date,
-        campaign_name: s.campaign_name,
-      }));
-  }
   const supabase = getSupabaseClient();
   const { storeId, from, to } = params;
 

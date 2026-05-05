@@ -15,22 +15,10 @@ import {
   type IntegrationCatalogItem,
   type IntegrationKey,
 } from "@/lib/queries/integrations";
-import { isDemoMode } from "@/lib/demo/mode";
 import { getSession } from "@/lib/auth/session";
-import {
-  saveRealProducts,
-  saveRealOrders,
-  saveRealReturns,
-  clearAllRealData,
-  hasRealProducts,
-  type RealProduct,
-  type RealOrder,
-  type RealOrderItem,
-  type RealReturn,
-} from "@/lib/demo/real-store";
 
 type Draft = Record<string, string>;
-type SyncResult = { synced?: number; syncedOrders?: number; syncedItems?: number; updatedItems?: number; demo?: boolean };
+type SyncResult = { synced?: number; syncedOrders?: number; syncedItems?: number; updatedItems?: number };
 type SyncState = { status: "idle" | "loading" | "ok" | "error"; message?: string };
 
 function asString(v: unknown) {
@@ -81,7 +69,6 @@ export function IntegrationsView() {
     mutationFn: async (args: { key: IntegrationKey; values: Draft; requiredKeys: string[] }) => {
       const clean: Record<string, string> = {};
       for (const k of args.requiredKeys) clean[k] = asString(args.values[k]).trim();
-      // include any other filled fields (optional)
       for (const [k, v] of Object.entries(args.values)) {
         const s = asString(v).trim();
         if (s.length > 0) clean[k] = s;
@@ -104,66 +91,12 @@ export function IntegrationsView() {
   });
 
   const [syncStates, setSyncStates] = useState<Record<string, SyncState>>({});
-  const [hasReal, setHasReal] = useState(() => storeId ? hasRealProducts(storeId) : false);
 
   function setSyncState(key: string, state: SyncState) {
     setSyncStates((prev: Record<string, SyncState>) => ({ ...prev, [key]: state }));
   }
 
-  function getTsoftCredsFromState(tsoftValues: Record<string, string>) {
-    const baseUrl = tsoftValues.base_url ?? "";
-    // Support both new (api_user/api_pass) and legacy (api_key/api_secret) field names
-    const apiUser = tsoftValues.api_user ?? tsoftValues.api_key ?? "";
-    const apiPass = tsoftValues.api_pass ?? tsoftValues.api_secret ?? "";
-    return { baseUrl, apiUser, apiPass };
-  }
-
-  async function runSyncDemo(type: "products" | "orders" | "returns", tsoftValues: Record<string, string>) {
-    const key = type;
-    setSyncState(key, { status: "loading" });
-    try {
-      const creds = getTsoftCredsFromState(tsoftValues);
-      if (!creds.baseUrl || !creds.apiUser || !creds.apiPass)
-        throw new Error("Tsoft kimlik bilgileri eksik. Lütfen önce kaydedin.");
-
-      const res = await fetch("/api/integrations/tsoft/fetch-direct", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          baseUrl: creds.baseUrl,
-          apiUser: creds.apiUser,
-          apiPass: creds.apiPass,
-          type,
-          limit: type === "products" ? 50 : undefined,
-        }),
-      });
-      const json = (await res.json()) as {
-        ok?: boolean; error?: string; count?: number;
-        products?: RealProduct[]; orders?: RealOrder[]; items?: RealOrderItem[]; returns?: RealReturn[];
-      };
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-
-      if (type === "products" && json.products) {
-        saveRealProducts(storeId!, json.products);
-        setHasReal(true);
-        setSyncState(key, { status: "ok", message: `${json.count ?? json.products.length} ürün yüklendi` });
-      } else if (type === "orders" && json.orders) {
-        saveRealOrders(storeId!, json.orders, json.items ?? []);
-        setSyncState(key, { status: "ok", message: `${json.orders.length} sipariş yüklendi` });
-      } else if (type === "returns" && json.returns) {
-        saveRealReturns(storeId!, json.returns);
-        setSyncState(key, { status: "ok", message: `${json.returns.length} iade güncellendi` });
-      }
-
-      await qc.invalidateQueries({ queryKey: ["products", storeId] });
-      await qc.invalidateQueries({ queryKey: ["orders", storeId] });
-      await qc.invalidateQueries({ queryKey: ["orderItems", storeId] });
-    } catch (e) {
-      setSyncState(key, { status: "error", message: e instanceof Error ? e.message : "Hata" });
-    }
-  }
-
-  async function runSyncProd(endpoint: string, label: string) {
+  async function runSync(endpoint: string, label: string) {
     const key = endpoint;
     setSyncState(key, { status: "loading" });
     try {
@@ -192,44 +125,6 @@ export function IntegrationsView() {
     }
   }
 
-  function handleReset() {
-    if (!storeId) return;
-    clearAllRealData(storeId);
-    setHasReal(false);
-    setSyncStates({});
-    void qc.invalidateQueries({ queryKey: ["products", storeId] });
-    void qc.invalidateQueries({ queryKey: ["orders", storeId] });
-    void qc.invalidateQueries({ queryKey: ["orderItems", storeId] });
-  }
-
-  type DiagnoseRow = { url: string; method: string; httpStatus: number; ok: boolean; errorCode?: string; message?: string; rawSnippet: string };
-  const [diagnoseResults, setDiagnoseResults] = useState<DiagnoseRow[] | null>(null);
-
-  async function runDiagnose(tsoftValues: Record<string, string>) {
-    setSyncState("diagnose", { status: "loading" });
-    setDiagnoseResults(null);
-    try {
-      const creds = getTsoftCredsFromState(tsoftValues);
-      if (!creds.baseUrl || !creds.apiUser || !creds.apiPass)
-        throw new Error("Tsoft kimlik bilgileri eksik.");
-      const res = await fetch("/api/integrations/tsoft/fetch-direct", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...creds, type: "diagnose" }),
-      });
-      const json = (await res.json()) as { ok?: boolean; error?: string; results?: DiagnoseRow[]; working?: DiagnoseRow | null };
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      setDiagnoseResults(json.results ?? []);
-      const working = json.working;
-      setSyncState("diagnose", {
-        status: working ? "ok" : "error",
-        message: working ? `Çalışan endpoint: ${working.url}` : "Hiçbir endpoint çalışmadı. Sonuçları inceleyin.",
-      });
-    } catch (e) {
-      setSyncState("diagnose", { status: "error", message: e instanceof Error ? e.message : "Hata" });
-    }
-  }
-
   const grouped = useMemo(() => {
     const map: Record<IntegrationCatalogItem["category"], IntegrationCatalogItem[]> = {
       altyapi: [],
@@ -250,30 +145,20 @@ export function IntegrationsView() {
   if (!storeId) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Başlamak için</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
-          Önce bir mağaza seçin.
-        </CardContent>
+        <CardHeader><CardTitle>Başlamak için</CardTitle></CardHeader>
+        <CardContent className="text-sm text-slate-600 dark:text-slate-300">Önce bir mağaza seçin.</CardContent>
       </Card>
     );
   }
 
   if (statesQuery.isLoading) {
-    return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
-        Entegrasyon durumları yükleniyor…
-      </div>
-    );
+    return <div className="text-sm text-slate-600 dark:text-slate-300">Entegrasyon durumları yükleniyor…</div>;
   }
 
   if (statesQuery.isError) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Hata</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Hata</CardTitle></CardHeader>
         <CardContent className="text-sm text-rose-700 dark:text-rose-200">
           Entegrasyon durumları alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
@@ -287,33 +172,19 @@ export function IntegrationsView() {
     <div className="space-y-6">
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Bağlantı Merkezi</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Bağlantı Merkezi</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                Gerekli entegrasyonlar bağlı değilse raporlarınız eksik görünebilir.
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={requiredConnected === requiredKeys.length ? "success" : "warning"}>
-                  {requiredConnected}/{requiredKeys.length} gerekli bağlı
-                </Badge>
-                {isDemoMode() && <Badge variant="warning">Demo Modu</Badge>}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200/70 dark:border-slate-800/70 p-3 text-xs text-slate-500 dark:text-slate-400">
-              Güvenlik notu: Token/şifreler hassastır. MVP’de değerler Supabase `stores.api_keys` alanında saklanır.
-              Prod’da şifreleme/secret manager önerilir.
+              <div>Gerekli entegrasyonlar bağlı değilse raporlarınız eksik görünebilir.</div>
+              <Badge variant={requiredConnected === requiredKeys.length ? "success" : "warning"}>
+                {requiredConnected}/{requiredKeys.length} gerekli bağlı
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Önerilen Sıra</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Önerilen Sıra</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
             <div className="flex items-center justify-between">
               <span>1) Altyapı (Tsoft)</span>
@@ -336,13 +207,9 @@ export function IntegrationsView() {
 
       {(Object.keys(grouped) as Array<keyof typeof grouped>).map((cat) => (
         <section key={cat} className="space-y-3">
-          <div className="flex items-end justify-between gap-2">
-            <div>
-              <div className="text-sm font-semibold">{categoryTitle(cat)}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                {categoryHint(cat)}
-              </div>
-            </div>
+          <div>
+            <div className="text-sm font-semibold">{categoryTitle(cat)}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">{categoryHint(cat)}</div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -360,9 +227,7 @@ export function IntegrationsView() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <CardTitle>{item.title}</CardTitle>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          {item.description}
-                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.description}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         {requiredBadge(item.required)}
@@ -381,9 +246,7 @@ export function IntegrationsView() {
                           setOpenKey((prev) => (prev === item.key ? null : item.key));
                           setDrafts((prev) => ({
                             ...prev,
-                            [item.key]: connected
-                              ? { ...(state?.values ?? {}) }
-                              : { ...buildEmptyDraft(item) },
+                            [item.key]: connected ? { ...(state?.values ?? {}) } : { ...buildEmptyDraft(item) },
                           }));
                         }}
                       >
@@ -402,130 +265,41 @@ export function IntegrationsView() {
                         </Button>
                       )}
 
-                      {upsertMutation.isPending && openKey === item.key && (
-                        <Badge variant="default">Kaydediliyor…</Badge>
-                      )}
-                      {disconnectMutation.isPending && (
-                        <Badge variant="default">Güncelleniyor…</Badge>
-                      )}
+                      {upsertMutation.isPending && openKey === item.key && <Badge variant="default">Kaydediliyor…</Badge>}
+                      {disconnectMutation.isPending && <Badge variant="default">Güncelleniyor…</Badge>}
                     </div>
 
                     {item.key === "tsoft" && connected && (
                       <div className="rounded-xl border border-blue-200/60 dark:border-blue-800/60 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                            Veri Senkronizasyonu
-                            {isDemoMode() && <span className="ml-1 text-amber-600 dark:text-amber-400">(Gerçek API)</span>}
-                          </div>
-                          {hasReal && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleReset}
-                              className="text-xs text-rose-600 hover:text-rose-700"
-                            >
-                              Demo Veriye Dön
-                            </Button>
-                          )}
-                        </div>
-
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-300">Veri Senkronizasyonu</div>
                         <div className="flex flex-wrap gap-2">
-                          {isDemoMode()
-                            ? (
-                              [
-                                { type: "products" as const, label: "Ürünler (50 adet)" },
-                                { type: "orders" as const, label: "Siparişler" },
-                                { type: "returns" as const, label: "İadeler" },
-                              ].map(({ type, label }) => {
-                                const s = syncStates[type] ?? { status: "idle" };
-                                return (
-                                  <div key={type} className="flex flex-col gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="sm"
-                                      disabled={s.status === "loading"}
-                                      onClick={() => runSyncDemo(type, state?.values ?? {})}
-                                    >
-                                      {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
-                                    </Button>
-                                    {s.status === "ok" && (
-                                      <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
-                                    )}
-                                    {s.status === "error" && (
-                                      <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            )
-                            : (
-                              [
-                                { endpoint: "/api/integrations/tsoft/sync-store", label: "Ürünler" },
-                                { endpoint: "/api/integrations/tsoft/sync-orders-store", label: "Siparişler" },
-                                { endpoint: "/api/integrations/tsoft/sync-refunds-store", label: "İadeler" },
-                              ].map(({ endpoint, label }) => {
-                                const s = syncStates[endpoint] ?? { status: "idle" };
-                                return (
-                                  <div key={endpoint} className="flex flex-col gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="sm"
-                                      disabled={s.status === "loading"}
-                                      onClick={() => runSyncProd(endpoint, label)}
-                                    >
-                                      {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
-                                    </Button>
-                                    {s.status === "ok" && (
-                                      <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
-                                    )}
-                                    {s.status === "error" && (
-                                      <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            )
-                          }
-                        </div>
-
-                        {isDemoMode() && (
-                          <div className="border-t border-blue-200/60 dark:border-blue-800/60 pt-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                disabled={(syncStates["diagnose"] ?? { status: "idle" }).status === "loading"}
-                                onClick={() => runDiagnose(state?.values ?? {})}
-                                className="text-xs"
-                              >
-                                {(syncStates["diagnose"] ?? { status: "idle" }).status === "loading"
-                                  ? "Tanılanıyor…"
-                                  : "API'yi Tanı (Debug)"}
-                              </Button>
-                              {(syncStates["diagnose"]?.status === "ok" || syncStates["diagnose"]?.status === "error") && (
-                                <span className={`text-xs ${syncStates["diagnose"].status === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
-                                  {syncStates["diagnose"].message}
-                                </span>
-                              )}
-                            </div>
-                            {diagnoseResults && diagnoseResults.length > 0 && (
-                              <div className="rounded-lg bg-slate-900 dark:bg-slate-950 p-3 space-y-1 text-xs font-mono overflow-x-auto max-h-48 overflow-y-auto">
-                                {diagnoseResults.map((r, i) => (
-                                  <div key={i} className={r.ok ? "text-emerald-400" : "text-slate-400"}>
-                                    <span className={r.ok ? "text-emerald-300" : "text-slate-500"}>[{r.httpStatus}]</span>{" "}
-                                    {r.url.replace(/https?:\/\/[^/]+/, "")}
-                                    {r.errorCode && <span className="text-rose-400"> [{r.errorCode}]</span>}
-                                    {r.message && <span className="text-yellow-400"> {r.message}</span>}
-                                  </div>
-                                ))}
+                          {[
+                            { endpoint: "/api/integrations/tsoft/sync-store", label: "Ürünler" },
+                            { endpoint: "/api/integrations/tsoft/sync-orders-store", label: "Siparişler" },
+                            { endpoint: "/api/integrations/tsoft/sync-refunds-store", label: "İadeler" },
+                          ].map(({ endpoint, label }) => {
+                            const s = syncStates[endpoint] ?? { status: "idle" };
+                            return (
+                              <div key={endpoint} className="flex flex-col gap-1">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={s.status === "loading"}
+                                  onClick={() => runSync(endpoint, label)}
+                                >
+                                  {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
+                                </Button>
+                                {s.status === "ok" && (
+                                  <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
+                                )}
+                                {s.status === "error" && (
+                                  <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        )}
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
@@ -534,9 +308,7 @@ export function IntegrationsView() {
                         <div className="grid gap-3 md:grid-cols-2">
                           {item.fields.map((f) => (
                             <label key={f.key} className="block">
-                              <span className="text-xs text-slate-500 dark:text-slate-400">
-                                {f.label}
-                              </span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">{f.label}</span>
                               <Input
                                 type={f.secret ? "password" : "text"}
                                 value={draft[f.key] ?? ""}
@@ -577,16 +349,12 @@ export function IntegrationsView() {
 
                     {upsertMutation.isError && openKey === item.key && (
                       <div className="text-sm text-rose-700 dark:text-rose-200">
-                        {upsertMutation.error instanceof Error
-                          ? upsertMutation.error.message
-                          : "Kaydedilemedi."}
+                        {upsertMutation.error instanceof Error ? upsertMutation.error.message : "Kaydedilemedi."}
                       </div>
                     )}
                     {disconnectMutation.isError && (
                       <div className="text-sm text-rose-700 dark:text-rose-200">
-                        {disconnectMutation.error instanceof Error
-                          ? disconnectMutation.error.message
-                          : "Bağlantı kaldırılamadı."}
+                        {disconnectMutation.error instanceof Error ? disconnectMutation.error.message : "Bağlantı kaldırılamadı."}
                       </div>
                     )}
                   </CardContent>

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isDemoMode } from "@/lib/demo/mode";
 import {
   fetchAllTsoftOrders,
   normalizeTsoftOrders,
@@ -8,9 +7,6 @@ import {
 } from "@/lib/integrations/tsoft";
 
 export async function POST(req: Request) {
-  if (isDemoMode()) {
-    return NextResponse.json({ ok: true, syncedOrders: 10, syncedItems: 24, demo: true });
-  }
 
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length) : "";

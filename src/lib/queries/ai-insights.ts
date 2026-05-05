@@ -1,12 +1,4 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { isDemoMode } from "@/lib/demo/mode";
-import {
-  demoExpenses,
-  demoOrderItems,
-  demoOrders,
-  demoProducts,
-  demoSpends,
-} from "@/lib/demo/data";
 import { toLocalISODate } from "@/lib/date";
 
 type OrderRow = { amount: number; status: string; ordered_at: string };
@@ -33,7 +25,7 @@ type OrderItemRow = {
 };
 
 export type AiForecastPoint = {
-  date: string; // YYYY-MM-DD
+  date: string;
   revenue: number | null;
   adSpend: number | null;
   netProfit: number | null;
@@ -148,8 +140,7 @@ function computeRevenueByDay(orders: OrderRow[], from: Date, to: Date) {
 
 function computeSpendByDay(spends: SpendRow[], from: Date, to: Date) {
   const fromDate = isoDate(from);
-  const toInclusive = addDays(to, -1);
-  const toDate = isoDate(toInclusive);
+  const toDate = isoDate(addDays(to, -1));
   const map = new Map<string, { total: number; byPlatform: Record<string, number> }>();
   for (const s of spends) {
     const d = String(s.date);
@@ -166,8 +157,7 @@ function computeSpendByDay(spends: SpendRow[], from: Date, to: Date) {
 
 function computeExpensesByDay(expenses: ExpenseRow[], from: Date, to: Date) {
   const fromDate = isoDate(from);
-  const toInclusive = addDays(to, -1);
-  const toDate = isoDate(toInclusive);
+  const toDate = isoDate(addDays(to, -1));
   const map = new Map<string, number>();
   for (const e of expenses) {
     const d = String(e.effective_date);
@@ -194,8 +184,7 @@ function computeCogsByDay(items: OrderItemRow[], cogsBySku: Map<string, number>,
 function buildPlatformSpend(spends: SpendRow[], from: Date, to: Date) {
   const byPlatform = new Map<string, number>();
   const fromDate = isoDate(from);
-  const toInclusive = addDays(to, -1);
-  const toDate = isoDate(toInclusive);
+  const toDate = isoDate(addDays(to, -1));
   for (const s of spends) {
     const d = String(s.date);
     if (d < fromDate || d > toDate) continue;
@@ -213,13 +202,11 @@ function computeInventoryInsights(products: ProductRow[]) {
   for (const p of products) {
     const stock = Number(p.stock_level ?? 0);
     const velocity = Number(p.velocity ?? 0);
-    const dir =
-      stock <= 0 ? 0 : velocity <= 0 ? null : stock / velocity;
+    const dir = stock <= 0 ? 0 : velocity <= 0 ? null : stock / velocity;
 
     const critical = stock <= 0 || (dir != null && dir <= 7);
     const overstock = dir != null && dir >= 90;
-    const reorder =
-      !p.dnr && dir != null && dir > 7 && dir < 30;
+    const reorder = !p.dnr && dir != null && dir > 7 && dir < 30;
 
     const base: Omit<AiInventoryInsight, "kind" | "recommendedUnits"> = {
       sku: String(p.sku),
@@ -230,36 +217,13 @@ function computeInventoryInsights(products: ProductRow[]) {
       dnr: Boolean(p.dnr),
     };
 
-    if (p.dnr) {
-      insights.push({ ...base, kind: "dnr", recommendedUnits: null });
-      continue;
-    }
-
-    if (critical) {
-      const need = velocity > 0 ? Math.max(0, Math.ceil(velocity * 14 - stock)) : null;
-      insights.push({ ...base, kind: "critical", recommendedUnits: need });
-      continue;
-    }
-
-    if (reorder) {
-      const need = velocity > 0 ? Math.max(0, Math.ceil(velocity * 30 - stock)) : null;
-      insights.push({ ...base, kind: "reorder", recommendedUnits: need });
-      continue;
-    }
-
-    if (overstock) {
-      insights.push({ ...base, kind: "overstock", recommendedUnits: null });
-      continue;
-    }
+    if (p.dnr) { insights.push({ ...base, kind: "dnr", recommendedUnits: null }); continue; }
+    if (critical) { insights.push({ ...base, kind: "critical", recommendedUnits: velocity > 0 ? Math.max(0, Math.ceil(velocity * 14 - stock)) : null }); continue; }
+    if (reorder) { insights.push({ ...base, kind: "reorder", recommendedUnits: velocity > 0 ? Math.max(0, Math.ceil(velocity * 30 - stock)) : null }); continue; }
+    if (overstock) { insights.push({ ...base, kind: "overstock", recommendedUnits: null }); continue; }
   }
 
-  const order: Record<AiInventoryInsight["kind"], number> = {
-    critical: 0,
-    reorder: 1,
-    overstock: 2,
-    dnr: 3,
-  };
-
+  const order: Record<AiInventoryInsight["kind"], number> = { critical: 0, reorder: 1, overstock: 2, dnr: 3 };
   return insights.sort((a, b) => order[a.kind] - order[b.kind]);
 }
 
@@ -277,74 +241,32 @@ function buildSuggestions(args: {
   const suggestions: AiSuggestion[] = [];
 
   if (args.basisDays < 14) {
-    suggestions.push({
-      id: "basis-short",
-      title: "Kısa dönem verisi",
-      detail:
-        "Seçili tarih aralığı 14 günden kısa. Tahminler daha dalgalı olabilir; L30 seçerek daha stabil sonuç alırsınız.",
-      severity: "info",
-      impactTry: null,
-    });
+    suggestions.push({ id: "basis-short", title: "Kısa dönem verisi", detail: "Seçili tarih aralığı 14 günden kısa. Tahminler daha dalgalı olabilir; L30 seçerek daha stabil sonuç alırsınız.", severity: "info", impactTry: null });
   }
 
-  // Platform spend concentration
   const totalSpend = sum(args.platformSpend.map((p) => p.spend));
   const topPlatform = args.platformSpend[0];
   if (topPlatform && totalSpend > 0) {
     const pct = topPlatform.spend / totalSpend;
     if (pct >= 0.65) {
-      suggestions.push({
-        id: "spend-concentration",
-        title: "Harcama tek platformda yoğun",
-        detail: `${topPlatform.platform} toplam harcamanın ${Math.round(
-          pct * 100
-        )}%’ini oluşturuyor. Ölçeklemeden önce alternatif kanal test planı oluşturun.`,
-        severity: "warning",
-        impactTry: null,
-      });
+      suggestions.push({ id: "spend-concentration", title: "Harcama tek platformda yoğun", detail: `${topPlatform.platform} toplam harcamanın ${Math.round(pct * 100)}%'ini oluşturuyor. Ölçeklemeden önce alternatif kanal test planı oluşturun.`, severity: "warning", impactTry: null });
     }
   }
 
-  // ROAS / COS heuristics
   if (args.roas != null && args.roas < 1.6) {
-    suggestions.push({
-      id: "low-roas",
-      title: "ROAS düşük görünüyor",
-      detail:
-        "Kreatif/segment testleri yapın, düşük performanslı kampanyaları kısın ve bütçeyi kârlı SKU’lara kaydırın.",
-      severity: "warning",
-      impactTry: null,
-    });
+    suggestions.push({ id: "low-roas", title: "ROAS düşük görünüyor", detail: "Kreatif/segment testleri yapın, düşük performanslı kampanyaları kısın ve bütçeyi kârlı SKU'lara kaydırın.", severity: "warning", impactTry: null });
   }
   if (args.cos != null && args.cos > 0.2) {
-    suggestions.push({
-      id: "high-cos",
-      title: "COS yüksek",
-      detail:
-        "Harcama/ciro oranı yüksek. Hedef ROAS’a göre bütçe limitleri ve daha sık kreatif yenileme önerilir.",
-      severity: "warning",
-      impactTry: null,
-    });
+    suggestions.push({ id: "high-cos", title: "COS yüksek", detail: "Harcama/ciro oranı yüksek. Hedef ROAS'a göre bütçe limitleri ve daha sık kreatif yenileme önerilir.", severity: "warning", impactTry: null });
   }
 
-  // Product profitability & return rate (MVP: revenue - cogs)
   const fromIso = args.from.toISOString();
   const toIso = args.to.toISOString();
-  const bySku = new Map<
-    string,
-    { units: number; revenue: number; returnsUnits: number; name: string }
-  >();
+  const bySku = new Map<string, { units: number; revenue: number; returnsUnits: number; name: string }>();
   for (const it of args.items) {
     if (it.ordered_at < fromIso || it.ordered_at >= toIso) continue;
     const sku = String(it.sku);
-    const row =
-      bySku.get(sku) ??
-      ({
-        units: 0,
-        revenue: 0,
-        returnsUnits: 0,
-        name: String(it.name ?? sku),
-      } satisfies { units: number; revenue: number; returnsUnits: number; name: string });
+    const row = bySku.get(sku) ?? ({ units: 0, revenue: 0, returnsUnits: 0, name: String(it.name ?? sku) } satisfies { units: number; revenue: number; returnsUnits: number; name: string });
     const qty = Number(it.quantity ?? 0);
     const returned = Number(it.returned_quantity ?? 0);
     row.units += Math.max(0, qty - returned);
@@ -360,15 +282,7 @@ function buildSuggestions(args: {
       const unitRevenue = safeDivide(v.revenue, Math.max(1, v.units)) ?? 0;
       const unitProfit = unitRevenue - cogs;
       const returnRate = safeDivide(v.returnsUnits, Math.max(1, v.units + v.returnsUnits));
-      return {
-        sku,
-        name: v.name,
-        profit,
-        unitProfit,
-        returnRate,
-        revenue: v.revenue,
-        units: v.units,
-      };
+      return { sku, name: v.name, profit, unitProfit, returnRate, revenue: v.revenue, units: v.units };
     })
     .filter((x) => x.units >= 5)
     .sort((a, b) => a.profit - b.profit);
@@ -376,37 +290,16 @@ function buildSuggestions(args: {
   const worst = scored[0];
   if (worst && worst.profit < 0) {
     const suggested = Math.max(1, Math.round(Math.abs(worst.unitProfit) * 1.2));
-    suggestions.push({
-      id: "loss-product",
-      title: "Kârsız ürün tespit edildi",
-      detail: `${worst.name} (${worst.sku}) seçili aralıkta zarar ediyor. Birim kârı pozitife taşımak için fiyatı ~${suggested}₺ artırmayı veya COGS’i güncellemeyi değerlendirin.`,
-      severity: "danger",
-      impactTry: null,
-    });
+    suggestions.push({ id: "loss-product", title: "Kârsız ürün tespit edildi", detail: `${worst.name} (${worst.sku}) seçili aralıkta zarar ediyor. Birim kârı pozitife taşımak için fiyatı ~${suggested}₺ artırmayı veya COGS'i güncellemeyi değerlendirin.`, severity: "danger", impactTry: null });
   }
 
-  const highReturn = scored
-    .filter((x) => (x.returnRate ?? 0) >= 0.12)
-    .sort((a, b) => (b.returnRate ?? 0) - (a.returnRate ?? 0))[0];
+  const highReturn = scored.filter((x) => (x.returnRate ?? 0) >= 0.12).sort((a, b) => (b.returnRate ?? 0) - (a.returnRate ?? 0))[0];
   if (highReturn) {
-    suggestions.push({
-      id: "high-returns",
-      title: "İade oranı yüksek SKU",
-      detail: `${highReturn.name} (${highReturn.sku}) için iade oranı yüksek. Ürün sayfası (ölçü/kalite), kargo/hasar ve beklenti uyumu kontrolü önerilir.`,
-      severity: "warning",
-      impactTry: null,
-    });
+    suggestions.push({ id: "high-returns", title: "İade oranı yüksek SKU", detail: `${highReturn.name} (${highReturn.sku}) için iade oranı yüksek. Ürün sayfası (ölçü/kalite), kargo/hasar ve beklenti uyumu kontrolü önerilir.`, severity: "warning", impactTry: null });
   }
 
   if (suggestions.length === 0) {
-    suggestions.push({
-      id: "stable",
-      title: "Genel durum stabil",
-      detail:
-        "Belirgin bir risk sinyali görülmüyor. Kazanan kampanyaları kontrollü ölçekleyip COGS ve iadeleri yakından takip edin.",
-      severity: "success",
-      impactTry: null,
-    });
+    suggestions.push({ id: "stable", title: "Genel durum stabil", detail: "Belirgin bir risk sinyali görülmüyor. Kazanan kampanyaları kontrollü ölçekleyip COGS ve iadeleri yakından takip edin.", severity: "success", impactTry: null });
   }
 
   return suggestions.slice(0, 8);
@@ -415,7 +308,7 @@ function buildSuggestions(args: {
 export async function fetchAiInsights(params: {
   storeId: string;
   from: Date;
-  to: Date; // exclusive
+  to: Date;
   shippingCostPerOrder?: number;
   marketplaceFeeRate?: number;
 }): Promise<AiInsightsResult> {
@@ -423,152 +316,75 @@ export async function fetchAiInsights(params: {
   const shippingCostPerOrder = Number(params.shippingCostPerOrder ?? 0);
   const marketplaceFeeRate = Number(params.marketplaceFeeRate ?? 0);
 
-  // Basis for forecast: last min(30, range) days
   const rangeDays = enumerateDates(from, to);
   const basisDays = Math.max(1, Math.min(30, rangeDays.length));
   const basisFrom = addDays(to, -basisDays);
 
-  let orders: OrderRow[] = [];
-  let spends: SpendRow[] = [];
-  let expenses: ExpenseRow[] = [];
-  let products: ProductRow[] = [];
-  let items: OrderItemRow[] = [];
+  const supabase = getSupabaseClient();
 
-  if (isDemoMode()) {
-    orders = demoOrders
-      .filter((o) => o.store_id === storeId)
-      .map((o) => ({ amount: o.amount, status: o.status, ordered_at: o.ordered_at }));
+  const { data: ordersData, error: ordersError } = await supabase
+    .from("orders")
+    .select("amount,status,ordered_at")
+    .eq("store_id", storeId)
+    .gte("ordered_at", basisFrom.toISOString())
+    .lt("ordered_at", to.toISOString());
+  if (ordersError) throw ordersError;
 
-    spends = demoSpends
-      .filter((s) => s.store_id === storeId)
-      .map((s) => ({ platform: s.platform, spend: s.spend, date: s.date, campaign_name: s.campaign_name }));
+  const orders: OrderRow[] = (ordersData ?? []).map((row) => {
+    const r = asRecord(row);
+    return { amount: Number(r.amount ?? 0), status: String(r.status ?? ""), ordered_at: String(r.ordered_at ?? "") };
+  });
 
-    expenses = demoExpenses
-      .filter((e) => e.store_id === storeId)
-      .map((e) => ({ category: e.category, amount: e.amount, effective_date: e.effective_date }));
+  const { data: spendData, error: spendError } = await supabase
+    .from("marketing_spend")
+    .select("platform,spend,date,campaign_name")
+    .eq("store_id", storeId)
+    .gte("date", isoDate(basisFrom))
+    .lte("date", isoDate(addDays(to, -1)));
+  if (spendError) throw spendError;
 
-    products = demoProducts
-      .filter((p) => p.store_id === storeId)
-      .map((p) => ({
-        id: p.id,
-        sku: p.sku,
-        name: p.name,
-        cogs: p.cogs,
-        stock_level: p.stock_level,
-        velocity: p.velocity,
-        dnr: p.dnr,
-        status: p.status,
-      }));
+  const spends: SpendRow[] = (spendData ?? []).map((row) => {
+    const r = asRecord(row);
+    return { platform: String(r.platform ?? "bilinmiyor"), spend: Number(r.spend ?? 0), date: String(r.date ?? ""), campaign_name: (r.campaign_name as string | null | undefined) ?? null };
+  });
 
-    items = demoOrderItems
-      .filter((it) => it.store_id === storeId)
-      .map((it) => ({
-        sku: it.sku,
-        name: it.name,
-        quantity: it.quantity,
-        unit_price: it.unit_price,
-        discount: it.discount,
-        returned_quantity: it.returned_quantity,
-        ordered_at: it.ordered_at,
-      }));
-  } else {
-    const supabase = getSupabaseClient();
+  const { data: expenseData, error: expenseError } = await supabase
+    .from("expenses")
+    .select("category,amount,effective_date")
+    .eq("store_id", storeId)
+    .gte("effective_date", isoDate(basisFrom))
+    .lte("effective_date", isoDate(addDays(to, -1)));
+  if (expenseError) throw expenseError;
 
-    const { data: ordersData, error: ordersError } = await supabase
-      .from("orders")
-      .select("amount,status,ordered_at")
-      .eq("store_id", storeId)
-      .gte("ordered_at", basisFrom.toISOString())
-      .lt("ordered_at", to.toISOString());
-    if (ordersError) throw ordersError;
+  const expenses: ExpenseRow[] = (expenseData ?? []).map((row) => {
+    const r = asRecord(row);
+    return { category: String(r.category ?? ""), amount: Number(r.amount ?? 0), effective_date: String(r.effective_date ?? "") };
+  });
 
-    orders = (ordersData ?? []).map((row) => {
-      const r = asRecord(row);
-      return {
-        amount: Number(r.amount ?? 0),
-        status: String(r.status ?? ""),
-        ordered_at: String(r.ordered_at ?? ""),
-      };
-    });
+  const { data: productsData, error: productsError } = await supabase
+    .from("products")
+    .select("id,sku,name,cogs,stock_level,velocity,status,dnr")
+    .eq("store_id", storeId);
+  if (productsError) throw productsError;
+  const products: ProductRow[] = (productsData ?? []).map((row) => {
+    const r = asRecord(row);
+    return { id: String(r.id ?? ""), sku: String(r.sku ?? ""), name: String(r.name ?? ""), cogs: Number(r.cogs ?? 0), stock_level: Number(r.stock_level ?? 0), velocity: Number(r.velocity ?? 0), status: String(r.status ?? "aktif"), dnr: Boolean(r.dnr ?? false) };
+  });
 
-    const { data: spendData, error: spendError } = await supabase
-      .from("marketing_spend")
-      .select("platform,spend,date,campaign_name")
-      .eq("store_id", storeId)
-      .gte("date", isoDate(basisFrom))
-      .lte("date", isoDate(addDays(to, -1)));
-    if (spendError) throw spendError;
+  const { data: itemsData, error: itemsError } = await supabase
+    .from("order_items")
+    .select("sku,name,quantity,unit_price,discount,returned_quantity,ordered_at")
+    .eq("store_id", storeId)
+    .gte("ordered_at", basisFrom.toISOString())
+    .lt("ordered_at", to.toISOString());
+  if (itemsError) throw itemsError;
 
-    spends = (spendData ?? []).map((row) => {
-      const r = asRecord(row);
-      return {
-        platform: String(r.platform ?? "bilinmiyor"),
-        spend: Number(r.spend ?? 0),
-        date: String(r.date ?? ""),
-        campaign_name: (r.campaign_name as string | null | undefined) ?? null,
-      };
-    });
-
-    const { data: expenseData, error: expenseError } = await supabase
-      .from("expenses")
-      .select("category,amount,effective_date")
-      .eq("store_id", storeId)
-      .gte("effective_date", isoDate(basisFrom))
-      .lte("effective_date", isoDate(addDays(to, -1)));
-    if (expenseError) throw expenseError;
-
-    expenses = (expenseData ?? []).map((row) => {
-      const r = asRecord(row);
-      return {
-        category: String(r.category ?? ""),
-        amount: Number(r.amount ?? 0),
-        effective_date: String(r.effective_date ?? ""),
-      };
-    });
-
-    const { data: productsData, error: productsError } = await supabase
-      .from("products")
-      .select("id,sku,name,cogs,stock_level,velocity,status,dnr")
-      .eq("store_id", storeId);
-    if (productsError) throw productsError;
-    products = (productsData ?? []).map((row) => {
-      const r = asRecord(row);
-      return {
-        id: String(r.id ?? ""),
-        sku: String(r.sku ?? ""),
-        name: String(r.name ?? ""),
-        cogs: Number(r.cogs ?? 0),
-        stock_level: Number(r.stock_level ?? 0),
-        velocity: Number(r.velocity ?? 0),
-        status: String(r.status ?? "aktif"),
-        dnr: Boolean(r.dnr ?? false),
-      };
-    });
-
-    const { data: itemsData, error: itemsError } = await supabase
-      .from("order_items")
-      .select("sku,name,quantity,unit_price,discount,returned_quantity,ordered_at")
-      .eq("store_id", storeId)
-      .gte("ordered_at", basisFrom.toISOString())
-      .lt("ordered_at", to.toISOString());
-    if (itemsError) throw itemsError;
-
-    items = (itemsData ?? []).map((row) => {
-      const r = asRecord(row);
-      return {
-        sku: String(r.sku ?? ""),
-        name: (r.name as string | null | undefined) ?? null,
-        quantity: Number(r.quantity ?? 0),
-        unit_price: Number(r.unit_price ?? 0),
-        discount: Number(r.discount ?? 0),
-        returned_quantity: Number(r.returned_quantity ?? 0),
-        ordered_at: String(r.ordered_at ?? ""),
-      };
-    });
-  }
+  const items: OrderItemRow[] = (itemsData ?? []).map((row) => {
+    const r = asRecord(row);
+    return { sku: String(r.sku ?? ""), name: (r.name as string | null | undefined) ?? null, quantity: Number(r.quantity ?? 0), unit_price: Number(r.unit_price ?? 0), discount: Number(r.discount ?? 0), returned_quantity: Number(r.returned_quantity ?? 0), ordered_at: String(r.ordered_at ?? "") };
+  });
 
   const cogsBySku = buildCogsBySku(products);
-
   const revenueByDay = computeRevenueByDay(orders, basisFrom, to);
   const txByDay = new Map<string, number>();
   for (const o of orders) {
@@ -602,8 +418,7 @@ export async function fetchAiInsights(params: {
   const lastExpenses = sum(expenseSeries);
   const lastShipping = sum(shippingSeries);
   const lastFees = sum(feeSeries);
-  const lastNetProfit =
-    lastRevenue - (lastAdSpend + lastCogs + lastExpenses + lastShipping + lastFees);
+  const lastNetProfit = lastRevenue - (lastAdSpend + lastCogs + lastExpenses + lastShipping + lastFees);
   const lastRoas = safeDivide(lastRevenue, lastAdSpend);
   const lastCos = safeDivide(lastAdSpend, lastRevenue);
 
@@ -613,8 +428,7 @@ export async function fetchAiInsights(params: {
   const next30Expenses = Math.round(avgExpense * 30);
   const next30Shipping = Math.round(avgShipping * 30);
   const next30Fees = Math.round(avgFees * 30);
-  const next30NetProfit =
-    next30Revenue - (next30AdSpend + next30Cogs + next30Expenses + next30Shipping + next30Fees);
+  const next30NetProfit = next30Revenue - (next30AdSpend + next30Cogs + next30Expenses + next30Shipping + next30Fees);
   const expectedRoas = safeDivide(next30Revenue, next30AdSpend);
 
   const actualSeries: AiForecastPoint[] = basisDates.map((d) => {
@@ -632,52 +446,23 @@ export async function fetchAiInsights(params: {
   forecastFrom.setHours(0, 0, 0, 0);
   const forecastTo = addDays(forecastFrom, 30);
   const forecastDates = enumerateDates(forecastFrom, forecastTo);
-  const forecastSeries: AiForecastPoint[] = forecastDates.map((d) => {
-    const revenue = Math.round(avgRevenue);
-    const adSpend = Math.round(avgSpend);
-    const netProfit = Math.round(
-      avgRevenue - (avgSpend + avgCogs + avgExpense + avgShipping + avgFees)
-    );
-    return { date: d, revenue, adSpend, netProfit, isForecast: true };
-  });
+  const forecastSeries: AiForecastPoint[] = forecastDates.map((d) => ({
+    date: d,
+    revenue: Math.round(avgRevenue),
+    adSpend: Math.round(avgSpend),
+    netProfit: Math.round(avgRevenue - (avgSpend + avgCogs + avgExpense + avgShipping + avgFees)),
+    isForecast: true,
+  }));
 
   const platformSpend = buildPlatformSpend(spends, basisFrom, to);
-  const suggestions = buildSuggestions({
-    basisDays,
-    roas: lastRoas,
-    cos: lastCos,
-    platformSpend,
-    products,
-    items,
-    cogsBySku,
-    from: basisFrom,
-    to,
-  });
+  const suggestions = buildSuggestions({ basisDays, roas: lastRoas, cos: lastCos, platformSpend, products, items, cogsBySku, from: basisFrom, to });
   const inventory = computeInventoryInsights(products);
 
   return {
     basisDays,
-    last: {
-      revenue: lastRevenue,
-      adSpend: lastAdSpend,
-      cogs: lastCogs,
-      expenses: lastExpenses,
-      netProfit: lastNetProfit,
-      roas: lastRoas,
-      cos: lastCos,
-    },
-    forecast: {
-      next30Revenue,
-      next30AdSpend,
-      next30Cogs,
-      next30Expenses,
-      next30NetProfit,
-      expectedRoas,
-    },
-    assumptions: {
-      shippingCostPerOrder,
-      marketplaceFeeRate,
-    },
+    last: { revenue: lastRevenue, adSpend: lastAdSpend, cogs: lastCogs, expenses: lastExpenses, netProfit: lastNetProfit, roas: lastRoas, cos: lastCos },
+    forecast: { next30Revenue, next30AdSpend, next30Cogs, next30Expenses, next30NetProfit, expectedRoas },
+    assumptions: { shippingCostPerOrder, marketplaceFeeRate },
     series: [...actualSeries, ...forecastSeries],
     suggestions,
     inventory,

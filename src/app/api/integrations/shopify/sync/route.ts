@@ -5,7 +5,6 @@ import {
   normalizeShopifyProducts,
   type ShopifyCredentials,
 } from "@/lib/integrations/shopify";
-import { isDemoMode } from "@/lib/demo/mode";
 
 type StoreRow = {
   id: string;
@@ -26,9 +25,6 @@ function getCreds(apiKeys: unknown): ShopifyCredentials | null {
 }
 
 export async function GET(req: Request) {
-  if (isDemoMode()) {
-    return NextResponse.json({ ok: true, results: [{ storeId: "demo-store-1", synced: 3, demo: true }] });
-  }
   const url = new URL(req.url);
   const secret = url.searchParams.get("secret") ?? "";
   const expected = process.env.CRON_SECRET ?? "";

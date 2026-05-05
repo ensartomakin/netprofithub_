@@ -4,12 +4,9 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { isDemoMode } from "@/lib/demo/mode";
 
 export function SignOutButton() {
   const router = useRouter();
-
-  if (isDemoMode()) return null;
 
   return (
     <Button

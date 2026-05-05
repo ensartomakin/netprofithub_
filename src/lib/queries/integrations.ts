@@ -1,6 +1,4 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { isDemoMode } from "@/lib/demo/mode";
-import { demoStores } from "@/lib/demo/data";
 
 export type IntegrationKey =
   | "tsoft"
@@ -81,7 +79,7 @@ const CATALOG: IntegrationCatalogItem[] = [
     key: "amazon",
     category: "pazaryeri",
     title: "Amazon",
-    description: "Amazon SP-API (MVP’de yapılandırma placeholder).",
+    description: "Amazon SP-API.",
     required: true,
     fields: [
       { key: "seller_id", label: "Seller ID" },
@@ -146,30 +144,6 @@ function asRecord(v: unknown): Record<string, unknown> {
   return v as Record<string, unknown>;
 }
 
-const demoKey = (storeId: string) => `nph_demo_integrations:${storeId}`;
-
-function loadDemoStates(storeId: string): Record<string, IntegrationState> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(demoKey(storeId));
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return {};
-    return parsed as Record<string, IntegrationState>;
-  } catch {
-    return {};
-  }
-}
-
-function saveDemoStates(storeId: string, next: Record<string, IntegrationState>) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(demoKey(storeId), JSON.stringify(next));
-  } catch {
-    // ignore
-  }
-}
-
 function deriveConnected(values: Record<string, string>) {
   return Object.values(values).some((v) => String(v ?? "").trim().length > 0);
 }
@@ -187,14 +161,9 @@ function normalizeValues(v: unknown): Record<string, string> {
 function apiKeysToStates(apiKeys: Record<string, unknown>, platform: string | null | undefined) {
   const states: Partial<Record<IntegrationKey, IntegrationState>> = {};
 
-  // Shopify: legacy flat keys or nested
   const shopifyValues =
     "shop_domain" in apiKeys || "access_token" in apiKeys
-      ? normalizeValues({
-          shop_domain: apiKeys["shop_domain"],
-          access_token: apiKeys["access_token"],
-          api_version: apiKeys["api_version"],
-        })
+      ? normalizeValues({ shop_domain: apiKeys["shop_domain"], access_token: apiKeys["access_token"], api_version: apiKeys["api_version"] })
       : normalizeValues(apiKeys["shopify"]);
 
   states.shopify = {
@@ -203,16 +172,7 @@ function apiKeysToStates(apiKeys: Record<string, unknown>, platform: string | nu
     updatedAt: null,
   };
 
-  for (const key of [
-    "tsoft",
-    "trendyol",
-    "hepsiburada",
-    "amazon",
-    "google_ads",
-    "meta_ads",
-    "pinterest_ads",
-    "tiktok_ads",
-  ] as const) {
+  for (const key of ["tsoft", "trendyol", "hepsiburada", "amazon", "google_ads", "meta_ads", "pinterest_ads", "tiktok_ads"] as const) {
     const values = normalizeValues(apiKeys[key]);
     states[key] = {
       connected: (platform === key && key === "tsoft") || deriveConnected(values),
@@ -226,22 +186,6 @@ function apiKeysToStates(apiKeys: Record<string, unknown>, platform: string | nu
 
 export async function fetchIntegrationStates(params: { storeId: string }) {
   const { storeId } = params;
-  if (isDemoMode()) {
-    const saved = loadDemoStates(storeId);
-
-    // also reflect demoStores platform/api_keys (for shopify)
-    const s = demoStores.find((x) => x.id === storeId);
-    const api_keys = asRecord(s?.api_keys ?? {});
-    const base = apiKeysToStates(api_keys, s?.platform);
-
-    for (const item of CATALOG) {
-      const key = item.key;
-      const fromSaved = saved[key];
-      if (fromSaved) base[key] = fromSaved;
-    }
-    return base;
-  }
-
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("stores")
@@ -268,18 +212,6 @@ export async function upsertIntegrationState(params: {
     updatedAt: new Date().toISOString(),
   };
 
-  if (isDemoMode()) {
-    const existing = loadDemoStates(storeId);
-    existing[key] = nextState;
-    saveDemoStates(storeId, existing);
-
-    // reflect platform on demo store for altyapı keys
-    const s = demoStores.find((x) => x.id === storeId);
-    if (s && (key === "tsoft" || key === "shopify")) s.platform = key;
-    if (s) s.api_keys = { ...(s.api_keys ?? {}), [key]: values };
-    return;
-  }
-
   const supabase = getSupabaseClient();
 
   const { data: current, error: currentError } = await supabase
@@ -297,16 +229,12 @@ export async function upsertIntegrationState(params: {
 
   const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
   if (error) throw error;
+
+  return nextState;
 }
 
 export async function disconnectIntegration(params: { storeId: string; key: IntegrationKey }) {
   const { storeId, key } = params;
-  if (isDemoMode()) {
-    const existing = loadDemoStates(storeId);
-    existing[key] = { connected: false, values: {}, updatedAt: new Date().toISOString() };
-    saveDemoStates(storeId, existing);
-    return;
-  }
   const supabase = getSupabaseClient();
   const { data: current, error: currentError } = await supabase
     .from("stores")
@@ -320,4 +248,3 @@ export async function disconnectIntegration(params: { storeId: string; key: Inte
   const { error } = await supabase.from("stores").update({ api_keys: merged }).eq("id", storeId);
   if (error) throw error;
 }
-

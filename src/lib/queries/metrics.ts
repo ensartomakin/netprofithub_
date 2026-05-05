@@ -1,12 +1,4 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { isDemoMode } from "@/lib/demo/mode";
-import {
-  demoExpenses,
-  demoOrderItems,
-  demoOrders,
-  demoProducts,
-  demoSpends,
-} from "@/lib/demo/data";
 import { toLocalISODate } from "@/lib/date";
 import { calculateExpenseTotalsForRange } from "@/lib/expenses/calc";
 import { loadExpenseRules } from "@/lib/expense-rules";
@@ -32,119 +24,14 @@ function asRecord(v: unknown): Record<string, unknown> {
 }
 
 function toIsoDate(d: Date) {
-  // YYYY-MM-DD
   return toLocalISODate(d);
-}
-
-function loadDemoExtraExpenses(storeId: string) {
-  if (typeof window === "undefined") return [] as Array<{
-    category: string;
-    amount: number;
-    effective_date: string;
-    recurring_status: boolean;
-  }>;
-  try {
-    const raw = window.localStorage.getItem(`nph_demo_expenses:${storeId}`);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed as Array<{
-      category: string;
-      amount: number;
-      effective_date: string;
-      recurring_status: boolean;
-    }>;
-  } catch {
-    return [];
-  }
 }
 
 export async function fetchDashboardSummary(params: {
   storeId: string;
   from: Date;
-  to: Date; // exclusive
+  to: Date;
 }): Promise<DashboardSummary> {
-  if (isDemoMode()) {
-    const { storeId, from, to } = params;
-    const fromIso = from.toISOString();
-    const toIso = to.toISOString();
-
-    const orders = demoOrders
-      .filter((o) => o.store_id === storeId)
-      .filter((o) => o.ordered_at >= fromIso && o.ordered_at < toIso);
-
-    const paid = orders.filter((o) => o.status === "odendi");
-    const refunded = orders.filter((o) => o.status === "iade");
-
-    const grossSales = sum(paid.map((o) => Number(o.amount ?? 0)));
-    const shipping = sum(paid.map((o) => Number(o.shipping ?? 0)));
-    const tax = sum(paid.map((o) => Number(o.tax ?? 0)));
-    const returns = sum(refunded.map((o) => Number(o.amount ?? 0)));
-
-    const fromDate = toIsoDate(from);
-    const toInclusive = new Date(to);
-    toInclusive.setDate(toInclusive.getDate() - 1);
-    const toDate = toIsoDate(toInclusive);
-
-    const spends = demoSpends
-      .filter((s) => s.store_id === storeId)
-      .filter((s) => s.date >= fromDate && s.date <= toDate);
-
-    const platformSpend: Record<string, number> = {};
-    for (const s of spends) {
-      const key = String(s.platform ?? "bilinmiyor");
-      platformSpend[key] = (platformSpend[key] ?? 0) + Number(s.spend ?? 0);
-    }
-    const adSpend = sum(Object.values(platformSpend));
-
-    const expenses = [
-      ...demoExpenses
-      .filter((e) => e.store_id === storeId)
-      .map((e) => ({
-        category: e.category,
-        amount: e.amount,
-        effective_date: e.effective_date,
-        recurring_status: Boolean(e.recurring_status ?? false),
-      })),
-      ...loadDemoExtraExpenses(storeId),
-    ];
-
-    const rules = loadExpenseRules(storeId);
-    const expensesTotal = calculateExpenseTotalsForRange({
-      expenses,
-      rules,
-      grossSales,
-      from,
-      toExclusive: to,
-    }).total;
-
-    const items = demoOrderItems
-      .filter((x) => x.store_id === storeId)
-      .filter((x) => x.ordered_at >= fromIso && x.ordered_at < toIso);
-    const cogsBySku = new Map(
-      demoProducts
-        .filter((p) => p.store_id === storeId)
-        .map((p) => [p.sku, p.cogs] as const)
-    );
-    const cogsTotal = sum(
-      items.map((it) => {
-        const cogs = Number(cogsBySku.get(it.sku) ?? 0);
-        const netUnits = Math.max(0, Number(it.quantity) - Number(it.returned_quantity ?? 0));
-        return netUnits * cogs;
-      })
-    );
-
-    return {
-      grossSales,
-      shipping,
-      tax,
-      returns,
-      adSpend,
-      expensesTotal,
-      cogsTotal,
-      platformSpend,
-    };
-  }
   const supabase = getSupabaseClient();
   const { storeId, from, to } = params;
 
@@ -165,7 +52,6 @@ export async function fetchDashboardSummary(params: {
   const returns = sum(refunded.map((o) => Number(o.amount ?? 0)));
 
   const fromDate = toIsoDate(from);
-  // to exclusive -> inclusive date için bir gün geri al
   const toInclusive = new Date(to);
   toInclusive.setDate(toInclusive.getDate() - 1);
   const toDate = toIsoDate(toInclusive);
@@ -209,7 +95,6 @@ export async function fetchDashboardSummary(params: {
     toExclusive: to,
   }).total;
 
-  // COGS: order_items net units * products.cogs (MVP)
   const { data: items, error: itemsError } = await supabase
     .from("order_items")
     .select("sku,quantity,returned_quantity,ordered_at")
@@ -240,14 +125,5 @@ export async function fetchDashboardSummary(params: {
     })
   );
 
-  return {
-    grossSales,
-    shipping,
-    tax,
-    returns,
-    adSpend,
-    expensesTotal,
-    cogsTotal,
-    platformSpend,
-  };
+  return { grossSales, shipping, tax, returns, adSpend, expensesTotal, cogsTotal, platformSpend };
 }

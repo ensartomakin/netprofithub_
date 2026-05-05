@@ -1,7 +1,4 @@
-import { isDemoMode } from "@/lib/demo/mode";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { demoOrders } from "@/lib/demo/data";
-import { loadRealOrders } from "@/lib/demo/real-store";
 
 export type OrderRow = {
   id: string;
@@ -21,41 +18,6 @@ function asRecord(v: unknown): Record<string, unknown> {
 
 export async function fetchOrders(params: { storeId: string; from: Date; to: Date }) {
   const { storeId, from, to } = params;
-  if (isDemoMode()) {
-    const fromIso = from.toISOString();
-    const toIso = to.toISOString();
-
-    const realOrders = loadRealOrders(storeId);
-    if (realOrders.length > 0) {
-      return realOrders
-        .filter((o) => o.ordered_at >= fromIso && o.ordered_at < toIso)
-        .map((o, i) => ({
-          id: `real-order-${o.external_order_id}-${i}`,
-          customer_id: o.customer_id,
-          channel: null,
-          amount: o.amount,
-          tax: o.tax,
-          shipping: o.shipping,
-          status: o.status,
-          ordered_at: o.ordered_at,
-        })) as OrderRow[];
-    }
-
-    return demoOrders
-      .filter((o) => o.store_id === storeId)
-      .filter((o) => o.ordered_at >= fromIso && o.ordered_at < toIso)
-      .map((o) => ({
-        id: o.id,
-        customer_id: o.customer_id ?? null,
-        channel: o.channel ?? null,
-        amount: o.amount,
-        tax: o.tax,
-        shipping: o.shipping,
-        status: o.status,
-        ordered_at: o.ordered_at,
-      })) as OrderRow[];
-  }
-
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("orders")

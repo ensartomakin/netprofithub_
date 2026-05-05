@@ -1,6 +1,4 @@
-import { isDemoMode } from "@/lib/demo/mode";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { demoOrders } from "@/lib/demo/data";
 
 export type CohortCell = {
   monthOffset: number; // 0..N
@@ -89,18 +87,7 @@ export async function fetchCustomerAnalytics(params: {
   const { storeId, from, to, maxMonths = 6 } = params;
 
   let orders: OrderRow[] = [];
-  if (isDemoMode()) {
-    orders = demoOrders
-      .filter((o) => o.store_id === storeId)
-      .filter((o) => o.status === "odendi")
-      .filter((o) => o.ordered_at >= from.toISOString() && o.ordered_at < to.toISOString())
-      .map((o) => ({
-        amount: Number(o.amount ?? 0),
-        status: o.status,
-        ordered_at: o.ordered_at,
-        customer_id: o.customer_id,
-      }));
-  } else {
+  {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from("orders")

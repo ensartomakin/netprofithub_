@@ -2,8 +2,6 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { isDemoMode } from "@/lib/demo/mode";
-import { demoStores } from "@/lib/demo/data";
 import { toLocalISODate } from "@/lib/date";
 
 export type DatePreset = "gunluk" | "l7" | "l30" | "ozel";
@@ -96,7 +94,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [storeId, setStoreId] = useState<string | null>(() => {
     try {
       if (typeof window === "undefined") return null;
-      if (isDemoMode()) return demoStores[0]?.id ?? null;
+
       return localStorage.getItem("nph_store_id");
     } catch {
       return null;

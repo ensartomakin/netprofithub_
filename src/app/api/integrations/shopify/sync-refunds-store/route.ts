@@ -6,7 +6,6 @@ import {
   fetchShopifyRefundsForOrder,
   type ShopifyCredentials,
 } from "@/lib/integrations/shopify";
-import { isDemoMode } from "@/lib/demo/mode";
 
 function getCreds(apiKeys: unknown): ShopifyCredentials | null {
   if (!apiKeys || typeof apiKeys !== "object") return null;
@@ -22,9 +21,6 @@ function getCreds(apiKeys: unknown): ShopifyCredentials | null {
 }
 
 export async function POST(req: Request) {
-  if (isDemoMode()) {
-    return NextResponse.json({ ok: true, updatedItems: 6, demo: true });
-  }
 
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length) : "";

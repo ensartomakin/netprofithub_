@@ -4,36 +4,12 @@ import { useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { isDemoMode } from "@/lib/demo/mode";
-import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const demo = isDemoMode();
-
-  if (demo) {
-    return (
-      <div className="min-h-screen grid place-items-center px-6">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Demo Modu</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Bu ortamda Supabase girişine gerek yok. Dummy veri seti ile tüm
-              ekranları gezebilirsiniz.
-            </p>
-            <Link href="/dashboard">
-              <Button>Dashboard’a Git</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +21,6 @@ export default function LoginPage() {
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // Supabase dashboard'da URL allowlist ayarlı olmalı.
           emailRedirectTo:
             typeof window !== "undefined"
               ? `${window.location.origin}/dashboard`
@@ -65,7 +40,7 @@ export default function LoginPage() {
     <div className="min-h-screen grid place-items-center px-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>NetProfitHub’a Giriş</CardTitle>
+          <CardTitle>NetProfitHub'a Giriş</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -99,10 +74,6 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            Not: `.env.local` içine `NEXT_PUBLIC_SUPABASE_URL` ve
-            `NEXT_PUBLIC_SUPABASE_ANON_KEY` eklemelisiniz.
-          </div>
         </CardContent>
       </Card>
     </div>

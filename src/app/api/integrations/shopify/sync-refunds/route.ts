@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { isDemoMode } from "@/lib/demo/mode";
 import {
   aggregateRefundedQuantities,
   fetchAllShopifyOrders,
@@ -28,12 +27,6 @@ function getCreds(apiKeys: unknown): ShopifyCredentials | null {
 }
 
 export async function GET(req: Request) {
-  if (isDemoMode()) {
-    return NextResponse.json({
-      ok: true,
-      results: [{ storeId: "demo-store-1", updatedItems: 6, demo: true }],
-    });
-  }
 
   const url = new URL(req.url);
   const secret = url.searchParams.get("secret") ?? "";

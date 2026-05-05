@@ -1,6 +1,4 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { isDemoMode } from "@/lib/demo/mode";
-import { demoStores } from "@/lib/demo/data";
 
 function asRecord(v: unknown): Record<string, unknown> {
   if (!v || typeof v !== "object") return {};
@@ -13,19 +11,6 @@ export async function connectShopify(params: {
   accessToken: string;
   apiVersion?: string;
 }) {
-  if (isDemoMode()) {
-    const s = demoStores.find((x) => x.id === params.storeId);
-    if (s) {
-      s.platform = "shopify";
-      s.api_keys = {
-        ...(s.api_keys ?? {}),
-        shop_domain: params.shopDomain,
-        access_token: params.accessToken,
-        api_version: params.apiVersion ?? "2024-10",
-      };
-    }
-    return;
-  }
   const supabase = getSupabaseClient();
   const { storeId, shopDomain, accessToken, apiVersion } = params;
 

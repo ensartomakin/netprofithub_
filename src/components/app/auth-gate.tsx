@@ -4,18 +4,15 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import type { ReactNode } from "react";
-import { isDemoMode } from "@/lib/demo/mode";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [checked, setChecked] = useState(false);
-  const ready = isDemoMode() || pathname === "/login" || checked;
+  const ready = pathname === "/login" || checked;
 
   useEffect(() => {
-    if (ready) {
-      return;
-    }
+    if (ready) return;
 
     let mounted = true;
     (async () => {
@@ -28,7 +25,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
         }
         setChecked(true);
       } catch {
-        // Eğer Supabase env eksikse, MVP’de demo moduna düşmek yerine login’e yönlendiriyoruz.
         router.replace("/login");
       }
     })();
