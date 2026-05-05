@@ -6,56 +6,34 @@ import {
   normalizeTsoftOrders,
   fetchAllTsoftReturns,
   aggregateTsoftReturnedQuantities,
-  tsoftPost,
   type TsoftCredentials,
 } from "@/lib/integrations/tsoft";
 
 type RequestBody = {
   baseUrl?: string;
-  apiKey?: string;
-  apiSecret?: string;
-  type?: "products" | "orders" | "returns" | "test";
+  // Support both field name conventions
+  apiUser?: string; apiPass?: string;
+  apiKey?: string;  apiSecret?: string;
+  type?: "products" | "orders" | "returns";
   limit?: number;
 };
 
-// Direct Tsoft fetch — no Supabase required.
-// Used in demo mode when the user wants real data without a DB.
 export async function POST(req: Request) {
   let body: RequestBody = {};
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  try { body = (await req.json()) as RequestBody; }
+  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+
+  const { baseUrl, type = "products", limit } = body;
+  const apiUser = body.apiUser ?? body.apiKey ?? "";
+  const apiPass = body.apiPass ?? body.apiSecret ?? "";
+
+  if (!baseUrl || !apiUser || !apiPass) {
+    return NextResponse.json({ error: "baseUrl, apiUser (veya apiKey), apiPass (veya apiSecret) gerekli" }, { status: 400 });
   }
 
-  const { baseUrl, apiKey, apiSecret, type = "products", limit } = body;
-
-  if (!baseUrl || !apiKey || !apiSecret) {
-    return NextResponse.json({ error: "baseUrl, apiKey, apiSecret gerekli" }, { status: 400 });
-  }
-
-  const creds: TsoftCredentials = { baseUrl, apiKey, apiSecret };
+  const creds: TsoftCredentials = { baseUrl, apiUser, apiPass };
 
   try {
-    // Diagnostic mode: try common endpoints and report which ones respond
-    if (type === "test") {
-      const candidateEndpoints = [
-        "/product/list", "/products", "/Product/GetList", "/Product/List",
-        "/order/list", "/orders", "/Order/GetList", "/Order/List",
-        "/return/list", "/returns",
-      ];
-      const results: Array<{ endpoint: string; ok: boolean; error?: string; sample?: unknown }> = [];
-      for (const ep of candidateEndpoints) {
-        try {
-          const data = await tsoftPost<unknown>(creds, ep, { Page: 1, PageSize: 1 });
-          results.push({ endpoint: ep, ok: true, sample: data.slice(0, 1) });
-        } catch (e) {
-          results.push({ endpoint: ep, ok: false, error: e instanceof Error ? e.message : String(e) });
-        }
-      }
-      return NextResponse.json({ ok: true, type: "test", results });
-    }
-
     if (type === "products") {
       const raw = await fetchAllTsoftProducts(creds);
       const normalized = normalizeTsoftProducts(raw);
@@ -83,7 +61,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, type: "returns", count: returns.length, returns });
     }
 
-    return NextResponse.json({ error: "type must be products | orders | returns | test" }, { status: 400 });
+    return NextResponse.json({ error: "type must be products | orders | returns" }, { status: 400 });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Tsoft API hatası" },

@@ -1,120 +1,46 @@
 export type TsoftCredentials = {
-  baseUrl: string;   // e.g. https://magaza.tsoft.com.tr
-  apiKey: string;
-  apiSecret: string;
+  baseUrl: string;
+  apiUser: string;
+  apiPass: string;
 };
 
-// ─── Raw API response wrapper ──────────────────────────────────────────────────
-// Tsoft returns: { status: true/false, message: "...", errorCode: "...", data: [...] }
+// ─── Token cache (server-side in-memory, per base+user) ──────────────────────
 
-type TsoftResponse<T> = {
-  status?: boolean;
-  message?: string;
-  errorCode?: string;
-  data?: T | T[];
-  // some Tsoft versions use these top-level keys
-  Data?: T[];
-  Success?: boolean;
-  TotalCount?: number;
-};
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
-// ─── Raw entity types ──────────────────────────────────────────────────────────
+async function getAuthToken(creds: TsoftCredentials): Promise<string> {
+  const cacheKey = `${creds.baseUrl}::${creds.apiUser}`;
+  const cached = tokenCache.get(cacheKey);
+  // Refresh 60s before expiry
+  if (cached && cached.expiresAt > Date.now() + 60_000) return cached.token;
 
-type TsoftProductVariant = {
-  variantId?: number | string;
-  VariantId?: number | string;
-  sku?: string;
-  Sku?: string;
-  barcode?: string;
-  Barcode?: string;
-  stockAmount?: number | string;
-  StockAmount?: number | string;
-  price?: number | string;
-  Price?: number | string;
-  status?: number | string;
-  Status?: number | string;
-};
+  const base = normalizeBaseUrl(creds.baseUrl);
+  const url = `${base}/rest1/auth/login/${encodeURIComponent(creds.apiUser)}`;
+  const body = new URLSearchParams({ user: creds.apiUser, pass: creds.apiPass });
 
-type TsoftProduct = {
-  productId?: number | string;
-  ProductId?: number | string;
-  id?: number | string;
-  name?: string;
-  Name?: string;
-  sku?: string;
-  Sku?: string;
-  barcode?: string;
-  Barcode?: string;
-  stockAmount?: number | string;
-  StockAmount?: number | string;
-  stock?: number | string;
-  status?: number | string | boolean;
-  Status?: number | string | boolean;
-  isActive?: boolean;
-  variants?: TsoftProductVariant[];
-  Variants?: TsoftProductVariant[];
-};
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
 
-type TsoftOrderLine = {
-  lineId?: number | string;
-  LineId?: number | string;
-  id?: number | string;
-  productId?: number | string;
-  sku?: string;
-  Sku?: string;
-  productName?: string;
-  ProductName?: string;
-  name?: string;
-  quantity?: number | string;
-  Quantity?: number | string;
-  unitPrice?: number | string;
-  UnitPrice?: number | string;
-  price?: number | string;
-  discount?: number | string;
-  Discount?: number | string;
-};
+  const text = await res.text();
+  let json: { success?: boolean; message?: string; data?: Array<{ token?: string }> };
+  try { json = JSON.parse(text); } catch { throw new Error(`Tsoft login hata: ${res.status} ${text.slice(0, 200)}`); }
 
-type TsoftOrder = {
-  orderId?: number | string;
-  OrderId?: number | string;
-  id?: number | string;
-  createdDate?: string;
-  CreatedDate?: string;
-  orderDate?: string;
-  insertDate?: string;
-  status?: string | number;
-  Status?: string | number;
-  orderStatus?: string;
-  totalPrice?: number | string;
-  TotalPrice?: number | string;
-  total?: number | string;
-  taxTotal?: number | string;
-  TaxTotal?: number | string;
-  tax?: number | string;
-  shippingTotal?: number | string;
-  ShippingTotal?: number | string;
-  shippingPrice?: number | string;
-  customerId?: number | string;
-  CustomerId?: number | string;
-  lines?: TsoftOrderLine[];
-  Lines?: TsoftOrderLine[];
-  orderLines?: TsoftOrderLine[];
-  products?: TsoftOrderLine[];
-};
+  if (!json.success || !json.data?.[0]?.token) {
+    throw new Error(`Tsoft login başarısız: ${json.message ?? text.slice(0, 200)}`);
+  }
 
-type TsoftReturn = {
-  returnId?: number | string;
-  ReturnId?: number | string;
-  id?: number | string;
-  orderId?: number | string;
-  OrderId?: number | string;
-  createdDate?: string;
-  CreatedDate?: string;
-  lines?: Array<{ lineId?: number | string; orderLineId?: number | string; OrderLineId?: number | string; quantity?: number | string; Quantity?: number | string }>;
-  Lines?: Array<{ lineId?: number | string; orderLineId?: number | string; OrderLineId?: number | string; quantity?: number | string; Quantity?: number | string }>;
-};
+  const token = json.data[0].token;
+  // Cache for 55 minutes (token valid 1 hour)
+  tokenCache.set(cacheKey, { token, expiresAt: Date.now() + 55 * 60 * 1000 });
+  return token;
+}
 
-// ─── HTTP helper ────────────────────────────────────────────────────────────────
+// ─── HTTP helper (form-encoded POST) ─────────────────────────────────────────
 
 function normalizeBaseUrl(raw: string): string {
   let s = raw.trim();
@@ -122,121 +48,110 @@ function normalizeBaseUrl(raw: string): string {
   return s.replace(/\/$/, "");
 }
 
-// Tsoft API uses POST with JSON body and API credentials in headers or body.
-// Auth: ApiKey + ApiSecret passed as headers (common pattern).
-function buildHeaders(creds: TsoftCredentials): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ApiKey: creds.apiKey,
-    ApiSecret: creds.apiSecret,
-    // Some versions also use these header names:
-    "X-Api-Key": creds.apiKey,
-    "X-Api-Secret": creds.apiSecret,
-  };
-}
-
-export async function tsoftPost<T>(
+async function tsoftPost<T>(
   creds: TsoftCredentials,
   path: string,
-  body: Record<string, unknown> = {}
-): Promise<T[]> {
+  params: Record<string, string>
+): Promise<T> {
+  const token = await getAuthToken(creds);
   const base = normalizeBaseUrl(creds.baseUrl);
-  const url = `${base}/api${path}`;
-  const headers = buildHeaders(creds);
-
-  // Include credentials in body as well (some Tsoft versions require it)
-  const fullBody = {
-    ApiKey: creds.apiKey,
-    ApiSecret: creds.apiSecret,
-    ...body,
-  };
+  const url = `${base}${path}`;
+  const body = new URLSearchParams({ token, ...params });
 
   const res = await fetch(url, {
     method: "POST",
-    headers,
-    body: JSON.stringify(fullBody),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
     cache: "no-store",
+    signal: AbortSignal.timeout(30_000),
   });
 
-  const text = await res.text().catch(() => "");
-  let json: TsoftResponse<T>;
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Tsoft API hata: ${res.status} (${path}) ${text.slice(0, 200)}`);
+
   try {
-    json = JSON.parse(text) as TsoftResponse<T>;
+    return JSON.parse(text) as T;
   } catch {
-    throw new Error(`Tsoft API hata: ${res.status} ${res.statusText} (${path}) ${text.slice(0, 200)}`);
+    throw new Error(`Tsoft API yanıt parse hatası (${path}): ${text.slice(0, 200)}`);
   }
-
-  // Tsoft returns status:false on errors even with HTTP 200
-  if (json.status === false) {
-    throw new Error(
-      `Tsoft API hata: ${json.message ?? "Bilinmeyen hata"} [${json.errorCode ?? ""}] (${path})`
-    );
-  }
-
-  if (!res.ok && !json.status) {
-    throw new Error(`Tsoft API hata: ${res.status} (${path}) ${text.slice(0, 200)}`);
-  }
-
-  // Extract data array from various response shapes
-  const data = json.data ?? json.Data;
-  if (Array.isArray(data)) return data as T[];
-  if (data != null) return [data] as T[];
-  return [];
 }
 
-// ─── Products ───────────────────────────────────────────────────────────────────
+// ─── Raw types ────────────────────────────────────────────────────────────────
 
-// Common Tsoft product endpoints (tried in order until one works)
-const PRODUCT_ENDPOINTS = [
-  "/product/list",
-  "/products",
-  "/Product/GetList",
-  "/Product/List",
-  "/urun/liste",
-];
+type TsoftApiResponse<T> = {
+  success?: boolean;
+  message?: string;
+  data?: T[];
+  totalCount?: number;
+  TotalCount?: number;
+};
 
-export async function fetchAllTsoftProducts(creds: TsoftCredentials): Promise<TsoftProduct[]> {
-  let workingEndpoint: string | null = null;
+type TsoftProductVariant = {
+  productCode?: string; ProductCode?: string;
+  barcode?: string; Barcode?: string;
+  stockAmount?: number | string; StockAmount?: number | string; stock?: number | string;
+  status?: number | string | boolean; Status?: number | string | boolean;
+  isActive?: boolean;
+};
 
-  // Find working endpoint on first call
-  for (const ep of PRODUCT_ENDPOINTS) {
-    try {
-      const batch = await tsoftPost<TsoftProduct>(creds, ep, { Page: 1, PageSize: 1 });
-      if (batch.length >= 0) { workingEndpoint = ep; break; }
-    } catch {
-      // try next
-    }
-  }
+type TsoftRawProduct = {
+  productCode?: string; ProductCode?: string;
+  productName?: string; ProductName?: string; name?: string; Name?: string; title?: string; Title?: string;
+  barcode?: string; Barcode?: string;
+  stockAmount?: number | string; StockAmount?: number | string; stock?: number | string; Stock?: number | string;
+  status?: number | string | boolean; Status?: number | string | boolean; isActive?: boolean;
+  variants?: TsoftProductVariant[]; Variants?: TsoftProductVariant[];
+  productVariants?: TsoftProductVariant[];
+};
 
-  if (!workingEndpoint) {
-    throw new Error(
-      `Tsoft ürün endpoint'i bulunamadı. Denenen: ${PRODUCT_ENDPOINTS.join(", ")}. ` +
-      "Tsoft yönetici panelinizden API dokümantasyonunu kontrol edin."
-    );
-  }
+type TsoftOrderProduct = {
+  productCode?: string; ProductCode?: string;
+  productName?: string; ProductName?: string; name?: string;
+  barcode?: string; Barcode?: string;
+  quantity?: number | string; Quantity?: number | string; amount?: number | string;
+  unitPrice?: number | string; UnitPrice?: number | string; price?: number | string; Price?: number | string;
+  discount?: number | string; Discount?: number | string; discountAmount?: number | string;
+  lineId?: number | string; LineId?: number | string; id?: number | string;
+};
 
-  const products: TsoftProduct[] = [];
-  let page = 1;
-  const pageSize = 100;
+type TsoftRawOrder = {
+  orderId?: number | string; OrderId?: number | string; orderCode?: string; OrderCode?: string; id?: number | string;
+  orderDate?: string; OrderDate?: string; createdDate?: string; CreatedDate?: string; insertDate?: string;
+  status?: string | number; Status?: string | number; orderStatus?: string; OrderStatus?: string;
+  totalAmount?: number | string; TotalAmount?: number | string; totalPrice?: number | string;
+  taxAmount?: number | string; TaxAmount?: number | string; tax?: number | string;
+  shippingAmount?: number | string; ShippingAmount?: number | string; shippingPrice?: number | string; cargoPrice?: number | string;
+  customerId?: number | string; CustomerId?: number | string; memberCode?: string;
+  products?: TsoftOrderProduct[]; Products?: TsoftOrderProduct[];
+  orderProducts?: TsoftOrderProduct[]; items?: TsoftOrderProduct[];
+};
+
+// ─── Products ─────────────────────────────────────────────────────────────────
+
+export async function fetchAllTsoftProducts(creds: TsoftCredentials): Promise<TsoftRawProduct[]> {
+  const allProducts: TsoftRawProduct[] = [];
+  const limit = 500;
+  let start = 0;
 
   for (let i = 0; i < 200; i++) {
-    const batch = await tsoftPost<TsoftProduct>(creds, workingEndpoint, { Page: page, PageSize: pageSize });
+    const json = await tsoftPost<TsoftApiResponse<TsoftRawProduct>>(creds, "/rest1/product/get", {
+      start: String(start),
+      limit: String(limit),
+      FetchDetails: "true",
+      StockFields: "true",
+    });
+
+    const batch = json.data ?? [];
     if (batch.length === 0) break;
-    products.push(...batch);
-    if (batch.length < pageSize) break;
-    page++;
+    allProducts.push(...batch);
+    if (batch.length < limit) break;
+    start += limit;
   }
 
-  return products;
+  return allProducts;
 }
 
-export type NormalizedProduct = {
-  sku: string;
-  name: string;
-  stock_level: number;
-  status: "aktif" | "pasif";
-};
+export type NormalizedProduct = { sku: string; name: string; stock_level: number; status: "aktif" | "pasif" };
 
 function toNum(v: unknown): number {
   const n = Number(v);
@@ -248,110 +163,98 @@ function coalesce<T>(...args: (T | undefined | null)[]): T | undefined {
   return undefined;
 }
 
-function isActive(p: TsoftProduct): boolean {
-  const status = coalesce(p.status, p.Status);
-  const active = coalesce(p.isActive);
-  if (active != null) return Boolean(active);
-  if (status == null) return true;
-  const s = String(status).toLowerCase();
-  return s === "1" || s === "true" || s === "aktif" || s === "active";
+function isVariantActive(v: TsoftProductVariant): boolean {
+  const s = coalesce(v.status, v.Status);
+  if (v.isActive != null) return Boolean(v.isActive);
+  if (s == null) return true;
+  return String(s) === "1" || String(s).toLowerCase() === "true" || String(s).toLowerCase() === "aktif";
 }
 
-export function normalizeTsoftProducts(products: TsoftProduct[]): NormalizedProduct[] {
+function isProductActive(p: TsoftRawProduct): boolean {
+  if (p.isActive != null) return Boolean(p.isActive);
+  const s = coalesce(p.status, p.Status);
+  if (s == null) return true;
+  return String(s) === "1" || String(s).toLowerCase() === "true" || String(s).toLowerCase() === "aktif";
+}
+
+export function normalizeTsoftProducts(products: TsoftRawProduct[]): NormalizedProduct[] {
   const rows: NormalizedProduct[] = [];
 
   for (const p of products) {
-    const name = String(coalesce(p.name, p.Name) ?? "").trim();
-    const baseSku = String(coalesce(p.sku, p.Sku, p.barcode, p.Barcode) ?? "").trim();
-    const baseStock = toNum(coalesce(p.stockAmount, p.StockAmount, p.stock));
-    const baseStatusVal: "aktif" | "pasif" = isActive(p) ? "aktif" : "pasif";
-    const variants = coalesce(p.variants, p.Variants) ?? [];
+    const name = String(coalesce(p.productName, p.ProductName, p.name, p.Name, p.title, p.Title) ?? "").trim();
+    const baseSku = String(coalesce(p.productCode, p.ProductCode, p.barcode, p.Barcode) ?? "").trim();
+    const baseStock = toNum(coalesce(p.stockAmount, p.StockAmount, p.stock, p.Stock));
+    const baseActive = isProductActive(p);
+    const variants = coalesce(p.variants, p.Variants, p.productVariants) ?? [];
 
     if (variants.length > 0) {
       for (const v of variants) {
-        const sku = String(coalesce(v.sku, v.Sku, v.barcode, v.Barcode) ?? "").trim();
+        const sku = String(coalesce(v.productCode, v.ProductCode, v.barcode, v.Barcode) ?? "").trim();
         if (!sku) continue;
-        const vStatus = coalesce(v.status, v.Status);
-        const vActive = vStatus == null || String(vStatus) === "1" || String(vStatus).toLowerCase() === "true";
         rows.push({
           sku,
           name,
-          stock_level: toNum(coalesce(v.stockAmount, v.StockAmount)),
-          status: vActive ? "aktif" : "pasif",
+          stock_level: toNum(coalesce(v.stockAmount, v.StockAmount, v.stock)),
+          status: isVariantActive(v) ? "aktif" : "pasif",
         });
       }
     } else {
       if (!baseSku) continue;
-      rows.push({ sku: baseSku, name, stock_level: baseStock, status: baseStatusVal });
+      rows.push({ sku: baseSku, name, stock_level: baseStock, status: baseActive ? "aktif" : "pasif" });
     }
   }
 
   return rows;
 }
 
-// ─── Orders ─────────────────────────────────────────────────────────────────────
+// ─── Orders ───────────────────────────────────────────────────────────────────
 
-const ORDER_ENDPOINTS = [
-  "/order/list",
-  "/orders",
-  "/Order/GetList",
-  "/Order/List",
-  "/siparis/liste",
-];
+function formatDateTime(d: Date): string {
+  return d.toISOString().replace("T", " ").slice(0, 19);
+}
 
-export async function fetchAllTsoftOrders(creds: TsoftCredentials): Promise<TsoftOrder[]> {
-  let workingEndpoint: string | null = null;
+export async function fetchAllTsoftOrders(creds: TsoftCredentials): Promise<TsoftRawOrder[]> {
+  const allOrders: TsoftRawOrder[] = [];
+  const limit = 200;
+  let start = 0;
 
-  for (const ep of ORDER_ENDPOINTS) {
-    try {
-      const batch = await tsoftPost<TsoftOrder>(creds, ep, { Page: 1, PageSize: 1 });
-      if (batch.length >= 0) { workingEndpoint = ep; break; }
-    } catch {
-      // try next
-    }
-  }
-
-  if (!workingEndpoint) {
-    throw new Error(
-      `Tsoft sipariş endpoint'i bulunamadı. Denenen: ${ORDER_ENDPOINTS.join(", ")}`
-    );
-  }
-
-  const orders: TsoftOrder[] = [];
-  let page = 1;
-  const pageSize = 100;
+  // Fetch last 2 years of orders
+  const dateEnd = new Date();
+  const dateStart = new Date(dateEnd);
+  dateStart.setFullYear(dateStart.getFullYear() - 2);
 
   for (let i = 0; i < 500; i++) {
-    const batch = await tsoftPost<TsoftOrder>(creds, workingEndpoint, { Page: page, PageSize: pageSize });
+    const json = await tsoftPost<TsoftApiResponse<TsoftRawOrder>>(creds, "/rest1/order/get", {
+      OrderDateTimeStart: formatDateTime(dateStart),
+      OrderDateTimeEnd: formatDateTime(dateEnd),
+      FetchProductData: "true",
+      start: String(start),
+      limit: String(limit),
+    });
+
+    const batch = json.data ?? [];
     if (batch.length === 0) break;
-    orders.push(...batch);
-    if (batch.length < pageSize) break;
-    page++;
+    allOrders.push(...batch);
+    if (batch.length < limit) break;
+    start += limit;
   }
 
-  return orders;
+  return allOrders;
 }
 
 export type NormalizedOrder = {
   external_order_id: number;
-  amount: number;
-  tax: number;
-  shipping: number;
+  amount: number; tax: number; shipping: number;
   status: "odendi" | "iade" | "iptal" | "beklemede";
   customer_id: string | null;
   ordered_at: string;
 };
 
 export type NormalizedOrderItem = {
-  external_line_item_id: number;
-  external_order_id: number;
-  sku: string;
-  name: string;
-  quantity: number;
-  unit_price: number;
-  discount: number;
-  returned_quantity: number;
-  ordered_at: string;
+  external_line_item_id: number; external_order_id: number;
+  sku: string; name: string;
+  quantity: number; unit_price: number; discount: number;
+  returned_quantity: number; ordered_at: string;
 };
 
 function mapOrderStatus(raw: unknown): NormalizedOrder["status"] {
@@ -362,42 +265,50 @@ function mapOrderStatus(raw: unknown): NormalizedOrder["status"] {
   return "beklemede";
 }
 
-export function normalizeTsoftOrders(orders: TsoftOrder[]) {
+export function normalizeTsoftOrders(orders: TsoftRawOrder[]) {
   const normalizedOrders: NormalizedOrder[] = [];
   const normalizedItems: NormalizedOrderItem[] = [];
 
   for (const o of orders) {
-    const external_order_id = toNum(coalesce(o.orderId, o.OrderId, o.id));
+    const rawId = coalesce(o.orderId, o.OrderId, o.id);
+    const codeId = o.orderCode ?? o.OrderCode;
+    // Use numeric id if available, else hash of code
+    const external_order_id = rawId ? toNum(rawId) : (codeId ? Math.abs(hashCode(codeId)) : 0);
     if (!external_order_id) continue;
 
-    const rawDate = coalesce(o.createdDate, o.CreatedDate, o.orderDate, o.insertDate);
+    const rawDate = coalesce(o.orderDate, o.OrderDate, o.createdDate, o.CreatedDate, o.insertDate);
     const ordered_at = rawDate ? new Date(rawDate).toISOString() : new Date().toISOString();
-    const rawStatus = coalesce(o.orderStatus, o.status, o.Status);
 
     normalizedOrders.push({
       external_order_id,
-      amount: toNum(coalesce(o.totalPrice, o.TotalPrice, o.total)),
-      tax: toNum(coalesce(o.taxTotal, o.TaxTotal, o.tax)),
-      shipping: toNum(coalesce(o.shippingTotal, o.ShippingTotal, o.shippingPrice)),
-      status: mapOrderStatus(rawStatus),
-      customer_id: coalesce(o.customerId, o.CustomerId) != null ? String(coalesce(o.customerId, o.CustomerId)) : null,
+      amount: toNum(coalesce(o.totalAmount, o.TotalAmount, o.totalPrice)),
+      tax: toNum(coalesce(o.taxAmount, o.TaxAmount, o.tax)),
+      shipping: toNum(coalesce(o.shippingAmount, o.ShippingAmount, o.shippingPrice, o.cargoPrice)),
+      status: mapOrderStatus(coalesce(o.orderStatus, o.OrderStatus, o.status, o.Status)),
+      customer_id: coalesce(o.customerId, o.CustomerId, o.memberCode) != null
+        ? String(coalesce(o.customerId, o.CustomerId, o.memberCode))
+        : null,
       ordered_at,
     });
 
-    const lines = coalesce(o.lines, o.Lines, o.orderLines, o.products) ?? [];
-    for (const li of lines) {
-      const lineId = toNum(coalesce(li.lineId, li.LineId, li.id));
-      const sku = String(coalesce(li.sku, li.Sku) ?? "").trim();
-      if (!lineId || !sku) continue;
+    const lines = coalesce(o.products, o.Products, o.orderProducts, o.items) ?? [];
+    for (let idx = 0; idx < lines.length; idx++) {
+      const li = lines[idx]!;
+      const sku = String(coalesce(li.productCode, li.ProductCode, li.barcode, li.Barcode) ?? "").trim();
+      if (!sku) continue;
+
+      const rawLineId = coalesce(li.lineId, li.LineId, li.id);
+      // Synthesize a stable line item id from order_id + idx if none present
+      const external_line_item_id = rawLineId ? toNum(rawLineId) : external_order_id * 10000 + idx;
 
       normalizedItems.push({
-        external_line_item_id: lineId,
+        external_line_item_id,
         external_order_id,
         sku,
         name: String(coalesce(li.productName, li.ProductName, li.name, sku)).trim(),
-        quantity: toNum(coalesce(li.quantity, li.Quantity)),
-        unit_price: toNum(coalesce(li.unitPrice, li.UnitPrice, li.price)),
-        discount: toNum(coalesce(li.discount, li.Discount)),
+        quantity: toNum(coalesce(li.quantity, li.Quantity, li.amount)),
+        unit_price: toNum(coalesce(li.unitPrice, li.UnitPrice, li.price, li.Price)),
+        discount: toNum(coalesce(li.discount, li.Discount, li.discountAmount)),
         returned_quantity: 0,
         ordered_at,
       });
@@ -407,72 +318,36 @@ export function normalizeTsoftOrders(orders: TsoftOrder[]) {
   return { orders: normalizedOrders, items: normalizedItems };
 }
 
-// ─── Returns ────────────────────────────────────────────────────────────────────
-
-const RETURN_ENDPOINTS = [
-  "/return/list",
-  "/returns",
-  "/Return/GetList",
-  "/Return/List",
-  "/iade/liste",
-];
-
-export async function fetchAllTsoftReturns(creds: TsoftCredentials): Promise<TsoftReturn[]> {
-  let workingEndpoint: string | null = null;
-
-  for (const ep of RETURN_ENDPOINTS) {
-    try {
-      const batch = await tsoftPost<TsoftReturn>(creds, ep, { Page: 1, PageSize: 1 });
-      if (batch.length >= 0) { workingEndpoint = ep; break; }
-    } catch {
-      // try next
-    }
-  }
-
-  if (!workingEndpoint) {
-    // Returns are optional — don't throw, return empty
-    return [];
-  }
-
-  const returns: TsoftReturn[] = [];
-  let page = 1;
-  const pageSize = 100;
-
-  for (let i = 0; i < 200; i++) {
-    const batch = await tsoftPost<TsoftReturn>(creds, workingEndpoint, { Page: page, PageSize: pageSize });
-    if (batch.length === 0) break;
-    returns.push(...batch);
-    if (batch.length < pageSize) break;
-    page++;
-  }
-
-  return returns;
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h;
 }
 
-export function aggregateTsoftReturnedQuantities(returns: TsoftReturn[]): Map<number, number> {
-  const map = new Map<number, number>();
-  for (const r of returns) {
-    const lines = coalesce(r.lines, r.Lines) ?? [];
-    for (const line of lines) {
-      const lineId = toNum(coalesce(line.orderLineId, line.OrderLineId, line.lineId));
-      const qty = toNum(coalesce(line.quantity, line.Quantity));
-      if (!lineId || !qty) continue;
-      map.set(lineId, (map.get(lineId) ?? 0) + qty);
-    }
-  }
-  return map;
+// ─── Returns (Tsoft doesn't have a dedicated return list endpoint in rest1) ───
+// Returns are reflected via order status "iade" — no separate sync needed.
+
+export async function fetchAllTsoftReturns(_creds: TsoftCredentials) {
+  return [];
 }
 
-// ─── Credential extractor ───────────────────────────────────────────────────────
+export function aggregateTsoftReturnedQuantities(_returns: unknown[]) {
+  return new Map<number, number>();
+}
+
+// ─── Credential extractor ─────────────────────────────────────────────────────
 
 export function getTsoftCreds(apiKeys: unknown): TsoftCredentials | null {
   if (!apiKeys || typeof apiKeys !== "object") return null;
   const any = apiKeys as Record<string, unknown>;
   const nested = any["tsoft"];
   const src = nested && typeof nested === "object" ? (nested as Record<string, unknown>) : any;
+
   const baseUrl = typeof src.base_url === "string" ? src.base_url.trim() : "";
-  const apiKey = typeof src.api_key === "string" ? src.api_key.trim() : "";
-  const apiSecret = typeof src.api_secret === "string" ? src.api_secret.trim() : "";
-  if (!baseUrl || !apiKey || !apiSecret) return null;
-  return { baseUrl, apiKey, apiSecret };
+  // Support both new (api_user/api_pass) and legacy (api_key/api_secret) field names
+  const apiUser = String(coalesce(src.api_user, src.api_key) ?? "").trim();
+  const apiPass = String(coalesce(src.api_pass, src.api_secret) ?? "").trim();
+
+  if (!baseUrl || !apiUser || !apiPass) return null;
+  return { baseUrl, apiUser, apiPass };
 }

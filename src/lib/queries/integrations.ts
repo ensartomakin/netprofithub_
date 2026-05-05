@@ -37,8 +37,8 @@ const CATALOG: IntegrationCatalogItem[] = [
     required: true,
     fields: [
       { key: "base_url", label: "Base URL", placeholder: "https://magaza.tsoft.com.tr" },
-      { key: "api_key", label: "API Key", secret: true },
-      { key: "api_secret", label: "API Secret", secret: true },
+      { key: "api_user", label: "Kullanıcı Adı" },
+      { key: "api_pass", label: "Şifre", secret: true },
     ],
   },
   {

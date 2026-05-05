@@ -112,9 +112,10 @@ export function IntegrationsView() {
 
   function getTsoftCredsFromState(tsoftValues: Record<string, string>) {
     const baseUrl = tsoftValues.base_url ?? "";
-    const apiKey = tsoftValues.api_key ?? "";
-    const apiSecret = tsoftValues.api_secret ?? "";
-    return { baseUrl, apiKey, apiSecret };
+    // Support both new (api_user/api_pass) and legacy (api_key/api_secret) field names
+    const apiUser = tsoftValues.api_user ?? tsoftValues.api_key ?? "";
+    const apiPass = tsoftValues.api_pass ?? tsoftValues.api_secret ?? "";
+    return { baseUrl, apiUser, apiPass };
   }
 
   async function runSyncDemo(type: "products" | "orders" | "returns", tsoftValues: Record<string, string>) {
@@ -128,7 +129,13 @@ export function IntegrationsView() {
       const res = await fetch("/api/integrations/tsoft/fetch-direct", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...creds, type, limit: type === "products" ? 50 : undefined }),
+        body: JSON.stringify({
+          baseUrl: creds.baseUrl,
+          apiUser: creds.apiUser,
+          apiPass: creds.apiPass,
+          type,
+          limit: type === "products" ? 50 : undefined,
+        }),
       });
       const json = (await res.json()) as {
         ok?: boolean; error?: string; count?: number;
@@ -193,6 +200,34 @@ export function IntegrationsView() {
     void qc.invalidateQueries({ queryKey: ["products", storeId] });
     void qc.invalidateQueries({ queryKey: ["orders", storeId] });
     void qc.invalidateQueries({ queryKey: ["orderItems", storeId] });
+  }
+
+  type DiagnoseRow = { url: string; method: string; httpStatus: number; ok: boolean; errorCode?: string; message?: string; rawSnippet: string };
+  const [diagnoseResults, setDiagnoseResults] = useState<DiagnoseRow[] | null>(null);
+
+  async function runDiagnose(tsoftValues: Record<string, string>) {
+    setSyncState("diagnose", { status: "loading" });
+    setDiagnoseResults(null);
+    try {
+      const creds = getTsoftCredsFromState(tsoftValues);
+      if (!creds.baseUrl || !creds.apiKey || !creds.apiSecret)
+        throw new Error("Tsoft kimlik bilgileri eksik.");
+      const res = await fetch("/api/integrations/tsoft/fetch-direct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...creds, type: "diagnose" }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string; results?: DiagnoseRow[]; working?: DiagnoseRow | null };
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      setDiagnoseResults(json.results ?? []);
+      const working = json.working;
+      setSyncState("diagnose", {
+        status: working ? "ok" : "error",
+        message: working ? `Çalışan endpoint: ${working.url}` : "Hiçbir endpoint çalışmadı. Sonuçları inceleyin.",
+      });
+    } catch (e) {
+      setSyncState("diagnose", { status: "error", message: e instanceof Error ? e.message : "Hata" });
+    }
   }
 
   const grouped = useMemo(() => {
@@ -455,6 +490,42 @@ export function IntegrationsView() {
                             )
                           }
                         </div>
+
+                        {isDemoMode() && (
+                          <div className="border-t border-blue-200/60 dark:border-blue-800/60 pt-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={(syncStates["diagnose"] ?? { status: "idle" }).status === "loading"}
+                                onClick={() => runDiagnose(state?.values ?? {})}
+                                className="text-xs"
+                              >
+                                {(syncStates["diagnose"] ?? { status: "idle" }).status === "loading"
+                                  ? "Tanılanıyor…"
+                                  : "API'yi Tanı (Debug)"}
+                              </Button>
+                              {(syncStates["diagnose"]?.status === "ok" || syncStates["diagnose"]?.status === "error") && (
+                                <span className={`text-xs ${syncStates["diagnose"].status === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+                                  {syncStates["diagnose"].message}
+                                </span>
+                              )}
+                            </div>
+                            {diagnoseResults && diagnoseResults.length > 0 && (
+                              <div className="rounded-lg bg-slate-900 dark:bg-slate-950 p-3 space-y-1 text-xs font-mono overflow-x-auto max-h-48 overflow-y-auto">
+                                {diagnoseResults.map((r, i) => (
+                                  <div key={i} className={r.ok ? "text-emerald-400" : "text-slate-400"}>
+                                    <span className={r.ok ? "text-emerald-300" : "text-slate-500"}>[{r.httpStatus}]</span>{" "}
+                                    {r.url.replace(/https?:\/\/[^/]+/, "")}
+                                    {r.errorCode && <span className="text-rose-400"> [{r.errorCode}]</span>}
+                                    {r.message && <span className="text-yellow-400"> {r.message}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
