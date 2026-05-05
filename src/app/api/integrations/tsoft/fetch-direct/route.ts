@@ -11,11 +11,9 @@ import {
 
 type RequestBody = {
   baseUrl?: string;
-  // Support both field name conventions
   apiUser?: string; apiPass?: string;
   apiKey?: string;  apiSecret?: string;
   type?: "products" | "orders" | "returns";
-  limit?: number;
 };
 
 export async function POST(req: Request) {
@@ -23,7 +21,7 @@ export async function POST(req: Request) {
   try { body = (await req.json()) as RequestBody; }
   catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { baseUrl, type = "products", limit } = body;
+  const { baseUrl, type = "products" } = body;
   const apiUser = body.apiUser ?? body.apiKey ?? "";
   const apiPass = body.apiPass ?? body.apiSecret ?? "";
 
@@ -37,18 +35,13 @@ export async function POST(req: Request) {
     if (type === "products") {
       const raw = await fetchAllTsoftProducts(creds);
       const normalized = normalizeTsoftProducts(raw);
-      const result = limit ? normalized.slice(0, limit) : normalized;
-      return NextResponse.json({ ok: true, type: "products", count: result.length, products: result });
+      return NextResponse.json({ ok: true, type: "products", count: normalized.length, products: normalized });
     }
 
     if (type === "orders") {
       const raw = await fetchAllTsoftOrders(creds);
       const normalized = normalizeTsoftOrders(raw);
-      const orders = limit ? normalized.orders.slice(0, limit) : normalized.orders;
-      const items = normalized.items.filter((it) =>
-        orders.some((o) => o.external_order_id === it.external_order_id)
-      );
-      return NextResponse.json({ ok: true, type: "orders", count: orders.length, orders, items });
+      return NextResponse.json({ ok: true, type: "orders", count: normalized.orders.length, orders: normalized.orders, items: normalized.items });
     }
 
     if (type === "returns") {

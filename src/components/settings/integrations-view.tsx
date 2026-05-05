@@ -120,6 +120,11 @@ export function IntegrationsView() {
       setSyncState(key, { status: "ok", message: parts.join(", ") || label + " tamam" });
       await qc.invalidateQueries({ queryKey: ["products", storeId] });
       await qc.invalidateQueries({ queryKey: ["orders", storeId] });
+      await qc.invalidateQueries({ queryKey: ["orderItems", storeId] });
+      await qc.invalidateQueries({ queryKey: ["dashboardTimeseries", storeId] });
+      await qc.invalidateQueries({ queryKey: ["dashboardSummary", storeId] });
+      await qc.invalidateQueries({ queryKey: ["topProducts", storeId] });
+      await qc.invalidateQueries({ queryKey: ["aiInsights", storeId] });
     } catch (e) {
       setSyncState(key, { status: "error", message: e instanceof Error ? e.message : "Hata" });
     }
