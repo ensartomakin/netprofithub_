@@ -123,7 +123,7 @@ export function IntegrationsView() {
     setSyncState(key, { status: "loading" });
     try {
       const creds = getTsoftCredsFromState(tsoftValues);
-      if (!creds.baseUrl || !creds.apiKey || !creds.apiSecret)
+      if (!creds.baseUrl || !creds.apiUser || !creds.apiPass)
         throw new Error("Tsoft kimlik bilgileri eksik. Lütfen önce kaydedin.");
 
       const res = await fetch("/api/integrations/tsoft/fetch-direct", {
@@ -210,7 +210,7 @@ export function IntegrationsView() {
     setDiagnoseResults(null);
     try {
       const creds = getTsoftCredsFromState(tsoftValues);
-      if (!creds.baseUrl || !creds.apiKey || !creds.apiSecret)
+      if (!creds.baseUrl || !creds.apiUser || !creds.apiPass)
         throw new Error("Tsoft kimlik bilgileri eksik.");
       const res = await fetch("/api/integrations/tsoft/fetch-direct", {
         method: "POST",
