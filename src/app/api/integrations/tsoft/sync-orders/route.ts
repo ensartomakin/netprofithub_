@@ -33,7 +33,22 @@ export async function GET(req: Request) {
       const creds = getTsoftCreds(store.api_keys);
       if (!creds) { results.push({ storeId: store.id, syncedOrders: 0, syncedItems: 0, error: "Missing api_keys" }); continue; }
 
-      const rawOrders = await fetchAllTsoftOrders(creds);
+      // Cursor tabanlı incremental sync
+      const { data: latestRow } = await admin
+        .from("orders")
+        .select("ordered_at")
+        .eq("store_id", store.id)
+        .order("ordered_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      let since: Date | undefined;
+      if (latestRow?.ordered_at) {
+        since = new Date(latestRow.ordered_at);
+        since.setDate(since.getDate() - 1);
+      }
+
+      const rawOrders = await fetchAllTsoftOrders(creds, since);
       const normalized = normalizeTsoftOrders(rawOrders);
 
       if (normalized.orders.length === 0) { results.push({ storeId: store.id, syncedOrders: 0, syncedItems: 0 }); continue; }

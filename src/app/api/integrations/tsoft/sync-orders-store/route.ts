@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   const creds = getTsoftCreds(store.api_keys);
   if (!creds) return NextResponse.json({ error: "Tsoft api_keys eksik" }, { status: 400 });
 
-  // Determine incremental sync start: last known order date minus 1 day buffer
+  // Determine incremental sync start
   const { data: latestRow } = await supabase
     .from("orders")
     .select("ordered_at")
@@ -54,10 +54,15 @@ export async function POST(req: Request) {
     .limit(1)
     .single();
 
-  let since: Date | undefined;
+  let since: Date;
   if (latestRow?.ordered_at) {
+    // DB'de veri var: son siparişten 1 gün öncesinden başla
     since = new Date(latestRow.ordered_at);
-    since.setDate(since.getDate() - 1); // 1 günlük buffer
+    since.setDate(since.getDate() - 1);
+  } else {
+    // İlk senkronizasyon: son 90 gün (timeout olmaması için)
+    since = new Date();
+    since.setDate(since.getDate() - 90);
   }
 
   let rawOrders: Awaited<ReturnType<typeof fetchAllTsoftOrders>>;
