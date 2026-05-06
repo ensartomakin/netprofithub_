@@ -22,7 +22,9 @@ export function StoreSwitcher() {
   );
 
   useEffect(() => {
-    if (!storeId && stores.length > 0) setStoreId(stores[0]!.id);
+    if (stores.length === 0) return;
+    const valid = stores.some((s) => s.id === storeId);
+    if (!valid) setStoreId(stores[0]!.id);
   }, [storeId, stores, setStoreId]);
 
   return (

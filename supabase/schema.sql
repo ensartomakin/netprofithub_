@@ -6,7 +6,7 @@ create extension if not exists "pgcrypto";
 
 -- Enums
 do $$ begin
-  create type store_platform as enum ('shopify', 'woocommerce', 'amazon', 'etsy', 'manual');
+  create type store_platform as enum ('shopify', 'woocommerce', 'amazon', 'etsy', 'manual', 'tsoft');
 exception
   when duplicate_object then null;
 end $$;
