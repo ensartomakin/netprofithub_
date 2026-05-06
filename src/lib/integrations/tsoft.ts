@@ -31,7 +31,10 @@ async function getAuthToken(creds: TsoftCredentials): Promise<string> {
   try { json = JSON.parse(text); } catch { throw new Error(`Tsoft login hata: ${res.status} ${text.slice(0, 200)}`); }
 
   if (!json.success || !json.data?.[0]?.token) {
-    throw new Error(`Tsoft login başarısız: ${json.message ?? text.slice(0, 200)}`);
+    const msg = json.message != null
+      ? (typeof json.message === "string" ? json.message : JSON.stringify(json.message))
+      : text.slice(0, 200);
+    throw new Error(`Tsoft login başarısız: ${msg}`);
   }
 
   const token = json.data[0].token;
