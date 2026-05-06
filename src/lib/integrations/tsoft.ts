@@ -216,15 +216,20 @@ function formatDateTime(d: Date): string {
   return d.toISOString().replace("T", " ").slice(0, 19);
 }
 
-export async function fetchAllTsoftOrders(creds: TsoftCredentials): Promise<TsoftRawOrder[]> {
+export async function fetchAllTsoftOrders(
+  creds: TsoftCredentials,
+  since?: Date
+): Promise<TsoftRawOrder[]> {
   const allOrders: TsoftRawOrder[] = [];
   const limit = 200;
   let start = 0;
 
-  // Fetch last 2 years of orders
   const dateEnd = new Date();
-  const dateStart = new Date(dateEnd);
-  dateStart.setFullYear(dateStart.getFullYear() - 2);
+  const dateStart = since ?? (() => {
+    const d = new Date(dateEnd);
+    d.setFullYear(d.getFullYear() - 2);
+    return d;
+  })();
 
   for (let i = 0; i < 500; i++) {
     const json = await tsoftPost<TsoftApiResponse<TsoftRawOrder>>(creds, "/rest1/order/get", {

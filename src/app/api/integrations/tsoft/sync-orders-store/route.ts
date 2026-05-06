@@ -6,6 +6,8 @@ import {
   getTsoftCreds,
 } from "@/lib/integrations/tsoft";
 
+export const maxDuration = 300;
+
 const CHUNK = 500;
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -43,9 +45,29 @@ export async function POST(req: Request) {
   const creds = getTsoftCreds(store.api_keys);
   if (!creds) return NextResponse.json({ error: "Tsoft api_keys eksik" }, { status: 400 });
 
+  // Determine incremental sync start
+  const { data: latestRow } = await supabase
+    .from("orders")
+    .select("ordered_at")
+    .eq("store_id", storeId)
+    .order("ordered_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  let since: Date;
+  if (latestRow?.ordered_at) {
+    // DB'de veri var: son siparişten 1 gün öncesinden başla
+    since = new Date(latestRow.ordered_at);
+    since.setDate(since.getDate() - 1);
+  } else {
+    // İlk senkronizasyon: son 90 gün (timeout olmaması için)
+    since = new Date();
+    since.setDate(since.getDate() - 90);
+  }
+
   let rawOrders: Awaited<ReturnType<typeof fetchAllTsoftOrders>>;
   try {
-    rawOrders = await fetchAllTsoftOrders(creds);
+    rawOrders = await fetchAllTsoftOrders(creds, since);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 502 });
@@ -114,5 +136,6 @@ export async function POST(req: Request) {
     ok: true,
     syncedOrders: normalized.orders.length,
     syncedItems: itemsPayload.length,
+    since: since?.toISOString() ?? null,
   });
 }
