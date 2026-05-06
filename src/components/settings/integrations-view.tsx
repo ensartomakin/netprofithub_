@@ -110,7 +110,13 @@ export function IntegrationsView() {
         },
         body: JSON.stringify({ storeId }),
       });
-      const json = (await res.json()) as SyncResult & { error?: string };
+      const text = await res.text();
+      let json: SyncResult & { error?: string };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`API yanıt hatası (HTTP ${res.status}): ${text.slice(0, 300) || "(boş yanıt)"}`);
+      }
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
       const parts: string[] = [];
       if (json.synced != null) parts.push(`${json.synced} ürün`);
