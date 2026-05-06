@@ -43,7 +43,13 @@ export async function POST(req: Request) {
   const creds = getTsoftCreds(store.api_keys);
   if (!creds) return NextResponse.json({ error: "Tsoft api_keys eksik" }, { status: 400 });
 
-  const rawOrders = await fetchAllTsoftOrders(creds);
+  let rawOrders: Awaited<ReturnType<typeof fetchAllTsoftOrders>>;
+  try {
+    rawOrders = await fetchAllTsoftOrders(creds);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
   const normalized = normalizeTsoftOrders(rawOrders);
 
   if (normalized.orders.length === 0) return NextResponse.json({ ok: true, syncedOrders: 0, syncedItems: 0 });
