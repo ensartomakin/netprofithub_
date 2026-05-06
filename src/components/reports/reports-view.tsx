@@ -307,7 +307,7 @@ export function ReportsView() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-slate-600 dark:text-slate-300">
-              Entegrasyon/gerçek veri çekme hariç: mevcut dummy verileri raporlamak için kullanılabilir.
+              Senkronize edilen veriler CSV olarak dışa aktarılabilir.
             </div>
 
             <div className="flex flex-wrap gap-2">

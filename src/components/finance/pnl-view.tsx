@@ -349,7 +349,7 @@ export function PnlView() {
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(s.adSpend)}</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Google/Meta/TikTok/Pinterest (dummy)
+              Google/Meta/TikTok/Pinterest
             </div>
           </CardContent>
         </Card>
@@ -360,7 +360,7 @@ export function PnlView() {
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(fixedExpenses)}</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              `expenses` tablosu + demo girişleri
+              Sabit gider tablosu
             </div>
           </CardContent>
         </Card>

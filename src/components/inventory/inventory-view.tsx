@@ -532,7 +532,7 @@ export function InventoryView() {
               </div>
             )}
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              Not: Bu öneriler dummy veriye dayalıdır. Gerçek tedarik/MOQ/lot bilgileri entegrasyon sonrası eklenecek.
+              Not: Tedarik/MOQ/lot bilgileri ürün ayarlarından güncellenebilir.
             </div>
           </CardContent>
         </Card>
