@@ -42,7 +42,7 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <div className="text-2xl font-semibold tabular-nums">
             {spendTarget == null ? "—" : formatCurrencyTRY(spendTarget)}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <div className="text-xs text-graphite mt-1">
             Hedef Bütçe = Hedef Ciro / Hedef ROI
           </div>
         </CardContent>
@@ -56,7 +56,7 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <div className="text-2xl font-semibold tabular-nums">
             {remainingBudget == null ? "—" : formatCurrencyTRY(remainingBudget)}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <div className="text-xs text-graphite mt-1">
             Bugüne kadar: {formatCurrencyTRY(spendToDate)}
           </div>
         </CardContent>
@@ -70,7 +70,7 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <div className="text-2xl font-semibold tabular-nums">
             {dailyBudget == null ? "—" : formatCurrencyTRY(dailyBudget)}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <div className="text-xs text-graphite mt-1">
             Kalan gün: {month ? daysLeft : "—"}
           </div>
         </CardContent>
@@ -84,7 +84,7 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <div className="text-2xl font-semibold tabular-nums">
             {targetCos == null ? "—" : `${formatNumber(targetCos * 100)}%`}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <div className="text-xs text-graphite mt-1">
             COS = Harcama / Ciro
           </div>
         </CardContent>
