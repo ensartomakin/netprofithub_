@@ -25,7 +25,7 @@ export function AdSpendBreakdown({
       <CardContent className="space-y-4">
         <div className="flex items-end justify-between">
           <div className="text-sm text-graphite">Toplam</div>
-          <div className="text-lg font-semibold">{formatCurrencyTRY(total)}</div>
+          <div className="text-lg font-medium text-near-black">{formatCurrencyTRY(total)}</div>
         </div>
 
         <div className="space-y-3">
@@ -39,9 +39,9 @@ export function AdSpendBreakdown({
                     {formatCurrencyTRY(r.spend)} ({Math.round(pct * 100)}%)
                   </div>
                 </div>
-                <div className="h-2 rounded-full bg-stone/40 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-parchment-card overflow-hidden">
                   <div
-                    className="h-full bg-electric-lime"
+                    className="h-full rounded-full bg-near-black"
                     style={{ width: `${Math.round(pct * 100)}%` }}
                   />
                 </div>

@@ -9,28 +9,19 @@ export type ActionItem = {
   severity: "info" | "warning" | "danger" | "success";
 };
 
-const variantBySeverity: Record<
-  ActionItem["severity"],
-  Parameters<typeof Badge>[0]["variant"]
-> = {
+const variantBySeverity: Record<ActionItem["severity"], Parameters<typeof Badge>[0]["variant"]> = {
   info: "default",
   success: "success",
   warning: "warning",
   danger: "danger",
 };
 
-const borderBySeverity: Record<ActionItem["severity"], string> = {
-  info: "border-stone",
-  success: "border-[#1dc479]/30",
-  warning: "border-amber-200",
-  danger: "border-[#eb3131]/30",
-};
-
-const bgBySeverity: Record<ActionItem["severity"], string> = {
-  info: "bg-parchment-card",
-  success: "bg-[#1dc479]/5",
-  warning: "bg-amber-50/60",
-  danger: "bg-[#eb3131]/5",
+/* Left-border accent per severity, parchment background — no outer border */
+const accentBySeverity: Record<ActionItem["severity"], string> = {
+  info: "border-l-[3px] border-stone bg-parchment-card",
+  success: "border-l-[3px] border-[#1dc479] bg-[#1dc479]/5",
+  warning: "border-l-[3px] border-[#e8a020] bg-[#e8a020]/5",
+  danger: "border-l-[3px] border-coral-alert bg-[#eb3131]/5",
 };
 
 export function ActionCenter({ items }: { items: ActionItem[] }) {
@@ -46,23 +37,18 @@ export function ActionCenter({ items }: { items: ActionItem[] }) {
         {items.map((it) => (
           <div
             key={it.title}
-            className={`rounded-[26px] border p-4 ${borderBySeverity[it.severity]} ${bgBySeverity[it.severity]}`}
+            className={`rounded-r-[26px] pl-4 pr-4 py-3 ${accentBySeverity[it.severity]}`}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="font-medium text-sm text-near-black">{it.title}</div>
               <Badge variant={variantBySeverity[it.severity]}>
-                {it.severity === "danger"
-                  ? "Kritik"
-                  : it.severity === "warning"
-                  ? "Uyarı"
-                  : it.severity === "success"
-                  ? "İyi"
+                {it.severity === "danger" ? "Kritik"
+                  : it.severity === "warning" ? "Uyarı"
+                  : it.severity === "success" ? "İyi"
                   : "Bilgi"}
               </Badge>
             </div>
-            <div className="text-xs text-graphite mt-1.5 leading-relaxed">
-              {it.detail}
-            </div>
+            <div className="text-xs text-graphite mt-1.5 leading-relaxed">{it.detail}</div>
           </div>
         ))}
       </CardContent>

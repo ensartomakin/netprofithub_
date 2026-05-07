@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;1,400&display=swap');
 @import "tailwindcss";
 
 /* ─── DESIGN SYSTEM TOKENS ─────────────────────────────────── */
@@ -7,6 +7,7 @@
   --color-electric-lime:  #beff50;
   --color-near-black:     #14140f;
   --color-pure-black:     #000000;
+  --color-pure-white:     #ffffff;
   --color-warm-cream:     #f5f5eb;
   --color-parchment-card: #fafaf5;
   --color-stone:          #d2d2c8;
@@ -16,8 +17,8 @@
   --color-coral-alert:    #eb3131;
   --color-mint-confirm:   #1dc479;
 
-  /* Typography */
-  --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system,
+  /* Typography — OTSono substitute: Plus Jakarta Sans */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
@@ -28,19 +29,22 @@
   --color-foreground: var(--foreground);
 }
 
-/* ─── SURFACE VARIABLES ─────────────────────────────────────── */
+/* ─── SURFACE HIERARCHY (no shadows — elevation via bg contrast) */
 :root {
-  --background:   #f5f5eb;
-  --foreground:   #14140f;
-  --card:         #ffffff;
-  --card-border:  #d2d2c8;
+  /* Level 0 — page ground */
+  --background: #f5f5eb;
+  --foreground: #14140f;
+  /* Level 2 — card surface */
+  --card: #ffffff;
+  /* Unused in no-border system */
+  --card-border: transparent;
 }
 
 .dark {
-  --background:  #14140f;
-  --foreground:  #f5f5eb;
-  --card:        #1e1e18;
-  --card-border: #30302a;
+  --background: #14140f;
+  --foreground: #f5f5eb;
+  --card: #1e1e18;
+  --card-border: transparent;
 }
 
 html,
@@ -52,4 +56,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
 }

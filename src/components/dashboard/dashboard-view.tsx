@@ -454,11 +454,11 @@ export function DashboardView() {
               />
             </div>
             <div className="lg:col-span-2 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[26px] border border-stone bg-parchment-card p-5">
+              <div className="rounded-[26px] bg-parchment-card p-5">
                 <div className="text-xs text-graphite">
                   Toplam Ciro (Ay)
                 </div>
-                <div className="text-xl font-semibold mt-1">
+                <div className="text-xl font-medium text-near-black mt-1">
                   {monthSummary ? formatCurrencyTRY(monthSummary.revenueToDate) : "—"}
                 </div>
                 <div className="text-xs text-graphite mt-2">
@@ -468,11 +468,11 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] border border-stone bg-parchment-card p-5">
+              <div className="rounded-[26px] bg-parchment-card p-5">
                 <div className="text-xs text-graphite">
                   Hedef Sapması (Ciro)
                 </div>
-                <div className="text-xl font-semibold mt-1">
+                <div className="text-xl font-medium text-near-black mt-1">
                   {monthSummary?.paceDeviation == null
                     ? "—"
                     : `${Math.round(monthSummary.paceDeviation * 100)}%`}
@@ -491,11 +491,11 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] border border-stone bg-parchment-card p-5">
+              <div className="rounded-[26px] bg-parchment-card p-5">
                 <div className="text-xs text-graphite">
                   Hedefe Kalan Ciro
                 </div>
-                <div className="text-xl font-semibold mt-1">
+                <div className="text-xl font-medium text-near-black mt-1">
                   {monthSummary
                     ? formatCurrencyTRY(remainingToTarget)
                     : "—"}
@@ -506,11 +506,11 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] border border-stone bg-parchment-card p-5">
+              <div className="rounded-[26px] bg-parchment-card p-5">
                 <div className="text-xs text-graphite">
                   ROI Hedef Sapması
                 </div>
-                <div className="text-xl font-semibold mt-1">
+                <div className="text-xl font-medium text-near-black mt-1">
                   {roiDeviation == null ? "—" : `${Math.round(roiDeviation * 100)}%`}
                 </div>
                 <div className="text-xs text-graphite mt-2">
@@ -523,7 +523,7 @@ export function DashboardView() {
             </div>
 
             {editingTargets && (
-              <div className="lg:col-span-3 rounded-[26px] border border-stone bg-parchment-card p-5">
+              <div className="lg:col-span-3 rounded-[26px] bg-parchment-card p-5">
                 <div className="grid gap-3 md:grid-cols-3 items-end">
                   <label className="block">
                     <span className="text-xs text-graphite">
@@ -609,7 +609,7 @@ export function DashboardView() {
             <CardTitle>Net Kâr</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">
+            <div className="text-2xl font-medium text-near-black">
               {netProfit == null ? "—" : formatCurrencyTRY(netProfit)}
             </div>
             <div className="text-xs text-graphite mt-1">
@@ -622,7 +622,7 @@ export function DashboardView() {
             <CardTitle>ROAS</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">
+            <div className="text-2xl font-medium text-near-black">
               {roas == null ? "—" : `${formatNumber(roas)}x`}
             </div>
             <div className="text-xs text-graphite mt-1">
@@ -635,7 +635,7 @@ export function DashboardView() {
             <CardTitle>MER</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">
+            <div className="text-2xl font-medium text-near-black">
               {mer == null ? "—" : formatNumber(mer)}
             </div>
             <div className="text-xs text-graphite mt-1">
@@ -651,7 +651,7 @@ export function DashboardView() {
             <CardTitle>Toplam Sipariş</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold tabular-nums">{rangeTotals.tx}</div>
+            <div className="text-2xl font-medium tabular-nums text-near-black">{rangeTotals.tx}</div>
             <div className="text-xs text-graphite mt-1">
               Seçili aralık
             </div>
@@ -662,7 +662,7 @@ export function DashboardView() {
             <CardTitle>Ort. Sepet</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="text-2xl font-medium tabular-nums text-near-black">
               {rangeTotals.aov == null ? "—" : formatCurrencyTRY(rangeTotals.aov)}
             </div>
             <div className="text-xs text-graphite mt-1">
@@ -675,7 +675,7 @@ export function DashboardView() {
             <CardTitle>Toplam Harcama</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="text-2xl font-medium tabular-nums text-near-black">
               {formatCurrencyTRY(rangeTotals.spend)}
             </div>
             <div className="text-xs text-graphite mt-1">
@@ -688,7 +688,7 @@ export function DashboardView() {
             <CardTitle>COS</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="text-2xl font-medium tabular-nums text-near-black">
               {rangeTotals.cos == null ? "—" : `${formatNumber(rangeTotals.cos * 100)}%`}
             </div>
             <div className="text-xs text-graphite mt-1">
@@ -707,7 +707,7 @@ export function DashboardView() {
                 <Badge variant="default">
                   {dateRange.preset.toUpperCase()}
                 </Badge>
-                <div className="flex rounded-[26px] border border-stone p-1 bg-parchment-card">
+                <div className="flex rounded-[26px] p-1 bg-parchment-card">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -849,20 +849,20 @@ export function DashboardView() {
             <div className="w-full overflow-auto">
               <table className="w-full text-sm">
                 <thead className="text-xs uppercase text-graphite">
-                  <tr className="border-b border-stone">
-                    <th className="px-3 py-3 text-left font-semibold">SKU</th>
-                    <th className="px-3 py-3 text-left font-semibold">Ürün</th>
-                    <th className="px-3 py-3 text-right font-semibold">Adet</th>
-                    <th className="px-3 py-3 text-right font-semibold">Gelir</th>
-                    <th className="px-3 py-3 text-right font-semibold">Kâr</th>
-                    <th className="px-3 py-3 text-right font-semibold">Marj</th>
+                  <tr className="border-b border-stone/50">
+                    <th className="px-3 py-3 text-left font-medium">SKU</th>
+                    <th className="px-3 py-3 text-left font-medium">Ürün</th>
+                    <th className="px-3 py-3 text-right font-medium">Adet</th>
+                    <th className="px-3 py-3 text-right font-medium">Gelir</th>
+                    <th className="px-3 py-3 text-right font-medium">Kâr</th>
+                    <th className="px-3 py-3 text-right font-medium">Marj</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topRows.map((r) => (
                     <tr
                       key={r.sku}
-                      className="border-b border-stone/40 last:border-0"
+                      className="border-b border-stone/30 last:border-0"
                     >
                       <td className="px-3 py-3 font-mono text-xs text-graphite">
                         {r.sku}
