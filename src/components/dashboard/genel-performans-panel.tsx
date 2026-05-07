@@ -34,7 +34,7 @@ function ChangeBadge({ change }: { change: number | null }) {
   const pct = `%${Math.abs(Math.round(change * 100)).toLocaleString("tr-TR")}`;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-medium px-2.5 py-0.5 rounded-full ${
+      className={`inline-flex items-center gap-0.5 text-xs font-medium px-2.5 py-0.5 rounded-[8px] ${
         positive ? "bg-[#1dc479]/15 text-[#1dc479]" : "bg-[#eb3131]/10 text-[#eb3131]"
       }`}
     >
@@ -55,7 +55,7 @@ type StatTileProps = {
 /* Seed: warm-gray surface inside white card */
 function StatTile({ icon, label, value, change, linkLabel }: StatTileProps) {
   return (
-    <div className="flex flex-col gap-2 p-4 rounded-[16px] bg-warm-gray">
+    <div className="flex flex-col gap-2 p-4 rounded-[26px] bg-warm-gray">
       <div className="flex items-center gap-1.5 text-dark-overlay">
         {icon}
         <span className="text-xs">{label}</span>
@@ -84,11 +84,11 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-[16px] bg-white px-4 py-3 text-xs border border-frosted-glass">
+    <div className="rounded-[26px] bg-white px-4 py-3 text-xs border border-frosted-glass">
       <div className="font-medium text-charcoal-text mb-1.5">{label}</div>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
-          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          <span className="w-2 h-2 rounded-[8px]" style={{ background: p.color }} />
           <span className="text-dark-overlay">{p.name === "today" ? "Bugün" : "Dün"}:</span>
           <span className="font-medium text-charcoal-text">{formatTRY(p.value)}</span>
         </div>
@@ -130,14 +130,14 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
 
   return (
     /* White card floating on snow-white page */
-    <div className="flex flex-col gap-5 p-6 rounded-[16px] bg-white h-full">
+    <div className="flex flex-col gap-5 p-6 rounded-[26px] bg-white h-full">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-medium text-charcoal-text">Genel Performansım</h2>
           <div className="text-xs text-dark-overlay mt-0.5">Son Güncelleme: {lastUpdated}</div>
         </div>
-        <button className="inline-flex items-center gap-1.5 text-xs font-medium text-snow-white bg-forest-green rounded-full px-4 py-2 hover:opacity-90 transition-opacity shrink-0">
+        <button className="inline-flex items-center gap-1.5 text-xs font-medium text-forest-green bg-pale-green rounded-[26px] px-4 py-2 hover:brightness-95 transition-opacity shrink-0">
           <span className="text-sm leading-none">📊</span>
           Canlı Performansım &rsaquo;
         </button>
@@ -164,11 +164,11 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
           {/* Legend */}
           <div className="flex items-center gap-3 text-xs text-dark-overlay">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-forest-green inline-block" />
+              <span className="w-2.5 h-2.5 rounded-[8px] bg-forest-green inline-block" />
               Bugün
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-frosted-glass inline-block" />
+              <span className="w-2.5 h-2.5 rounded-[8px] bg-frosted-glass inline-block" />
               Dün
             </span>
           </div>
@@ -181,24 +181,24 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
           <AreaChart data={points} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="gpToday" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1c3a13" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#1c3a13" stopOpacity={0} />
+                <stop offset="5%" stopColor="#14140f" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#14140f" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="gpYesterday" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#c4c7c4" stopOpacity={0.6} />
-                <stop offset="95%" stopColor="#c4c7c4" stopOpacity={0} />
+                <stop offset="5%" stopColor="#d2d2c8" stopOpacity={0.6} />
+                <stop offset="95%" stopColor="#d2d2c8" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(196,199,196,0.5)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(210,210,200,0.5)" />
             <XAxis
               dataKey="hour"
-              tick={{ fontSize: 10, fill: "#666666" }}
+              tick={{ fontSize: 10, fill: "#6e6e64" }}
               ticks={["00:00", "06:00", "12:00", "18:00", "23:00"]}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: "#666666" }}
+              tick={{ fontSize: 10, fill: "#6e6e64" }}
               tickFormatter={(v) => formatCompact(Number(v))}
               axisLine={false}
               tickLine={false}
@@ -208,7 +208,7 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
             <Area
               type="monotone"
               dataKey="yesterday"
-              stroke="#c4c7c4"
+              stroke="#d2d2c8"
               strokeWidth={1.5}
               fill="url(#gpYesterday)"
               dot={false}
@@ -217,7 +217,7 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
             <Area
               type="monotone"
               dataKey="today"
-              stroke="#1c3a13"
+              stroke="#14140f"
               strokeWidth={2}
               fill="url(#gpToday)"
               dot={false}

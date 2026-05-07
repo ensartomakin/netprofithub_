@@ -8,7 +8,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-[16px] bg-[color:var(--card)]", className)}
+      className={cn("rounded-[26px] bg-[color:var(--card)]", className)}
       {...props}
     />
   );

@@ -37,12 +37,12 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    /* Level 1 — warm-gray section surface */
-    <aside className="w-[240px] shrink-0 bg-warm-gray flex flex-col">
+    /* Level 0 — warm-cream sidebar surface */
+    <aside className="w-[240px] shrink-0 bg-snow-white flex flex-col">
       {/* Logo */}
       <div className="px-4 py-5">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-[16px] bg-forest-green text-snow-white grid place-items-center font-medium text-sm shrink-0 select-none">
+          <div className="h-9 w-9 rounded-[26px] bg-pale-green text-forest-green grid place-items-center font-medium text-sm shrink-0 select-none">
             N
           </div>
           <div className="leading-tight">
@@ -67,10 +67,10 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-full px-3 py-2 text-sm transition-colors",
+                "flex items-center gap-3 rounded-[26px] px-3 py-2 text-sm transition-colors",
                 active
                   ? "bg-forest-green text-snow-white font-medium"
-                  : "text-dark-overlay hover:bg-frosted-glass/50 hover:text-charcoal-text"
+                  : "text-dark-overlay hover:bg-warm-gray hover:text-charcoal-text"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

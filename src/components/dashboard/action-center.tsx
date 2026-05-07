@@ -37,7 +37,7 @@ export function ActionCenter({ items }: { items: ActionItem[] }) {
         {items.map((it) => (
           <div
             key={it.title}
-            className={`rounded-r-[16px] pl-4 pr-4 py-3 ${accentBySeverity[it.severity]}`}
+            className={`rounded-r-[26px] pl-4 pr-4 py-3 ${accentBySeverity[it.severity]}`}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="font-medium text-sm text-charcoal-text">{it.title}</div>

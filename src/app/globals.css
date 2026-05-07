@@ -1,26 +1,82 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500&display=swap');
 @import "tailwindcss";
 
-/* ─── SEED DESIGN SYSTEM TOKENS ────────────────────────────────── */
+/* ─── PERK DESIGN SYSTEM TOKENS (TravelPerk-inspired) ──────────── */
 @theme {
-  /* Colors */
-  --color-forest-green:         #1c3a13;
-  --color-snow-white:           #fcfcf7;
-  --color-pale-green:           #d3fa99;
-  --color-frosted-glass:        #c4c7c4;
-  --color-warm-gray:            #eeeee9;
-  --color-charcoal-text:        #000000;
-  --color-muted-product-green:  #757c5d;
-  --color-muted-product-yellow: #9f995b;
-  --color-muted-product-teal:   #698e79;
-  --color-ghost-button-gray:    #b3b3b3;
-  --color-dark-overlay:         #666666;
+  /* Colors — legacy token names preserved, values updated to Perk palette */
+  --color-forest-green:         #14140f;
+  --color-snow-white:           #f5f5eb;
+  --color-pale-green:           #beff50;
+  --color-frosted-glass:        #d2d2c8;
+  --color-warm-gray:            #fafaf5;
+  --color-charcoal-text:        #14140f;
+  --color-muted-product-green:  #6e6e64;
+  --color-muted-product-yellow: #6e6e64;
+  --color-muted-product-teal:   #6e6e64;
+  --color-ghost-button-gray:    #d2d2c8;
+  --color-dark-overlay:         #6e6e64;
 
-  /* Typography — Inter substitutes Seed Sans */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system,
+  /* New Perk tokens */
+  --color-electric-lime:        #beff50;
+  --color-near-black:           #14140f;
+  --color-pure-black:           #000000;
+  --color-pure-white:           #ffffff;
+  --color-warm-cream:           #f5f5eb;
+  --color-parchment-card:       #fafaf5;
+  --color-stone:                #d2d2c8;
+  --color-graphite:             #6e6e64;
+  --color-charcoal:             #30302a;
+  --color-slate-border:         #919183;
+  --color-signal-blue:          #144fcc;
+  --color-coral-alert:          #eb3131;
+  --color-mint-confirm:         #1dc479;
+
+  /* Typography — Plus Jakarta Sans */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo,
-    Monaco, Consolas, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Typography scale */
+  --text-caption:        10px;
+  --leading-caption:     1.5;
+  --text-body:           16px;
+  --leading-body:        1.5;
+  --text-subheading:     20px;
+  --leading-subheading:  1.4;
+  --text-heading-sm:     30px;
+  --leading-heading-sm:  1.2;
+  --text-heading:        40px;
+  --leading-heading:     1.1;
+  --text-heading-lg:     64px;
+  --leading-heading-lg:  1;
+  --tracking-heading-lg: -1.92px;
+  --text-display:        90px;
+  --leading-display:     0.89;
+  --tracking-display:    -2.7px;
+
+  /* Spacing */
+  --spacing-8:   8px;
+  --spacing-16:  16px;
+  --spacing-24:  24px;
+  --spacing-32:  32px;
+  --spacing-40:  40px;
+  --spacing-64:  64px;
+  --spacing-72:  72px;
+  --spacing-80:  80px;
+  --spacing-96:  96px;
+  --spacing-224: 224px;
+
+  /* Border radius */
+  --radius-md:          4px;
+  --radius-lg:          8px;
+  --radius-2xl:         18px;
+  --radius-3xl:         26px;
+  --radius-cards:       26px;
+  --radius-badges:      8px;
+  --radius-images:      26px;
+  --radius-buttons:     26px;
+  --radius-pilltabs:    26px;
+  --radius-iconbuttons: 50%;
 }
 
 @theme inline {
@@ -29,14 +85,14 @@
 }
 
 /* ─── SURFACE HIERARCHY ─────────────────────────────────────────
-   0 = Snow White Canvas  #fcfcf7  page ground
-   1 = Warm Gray Section  #eeeee9  inner panels / sidebar
-   2 = Card              #ffffff  white card on snow-white bg
-   3 = Forest Green       #1c3a13  accent / primary action
+   0 = Warm Cream Canvas  #f5f5eb  page ground
+   1 = Parchment Card     #fafaf5  inner panels / sidebar
+   2 = Card               #ffffff  white card on cream bg
+   3 = Near-Black         #14140f  accent / primary action
 */
 :root {
-  --background: #fcfcf7;
-  --foreground: #000000;
+  --background: #f5f5eb;
+  --foreground: #14140f;
   --card: #ffffff;
   --card-border: transparent;
 }

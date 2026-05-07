@@ -6,7 +6,7 @@ type Variant = "default" | "success" | "warning" | "danger";
 /* Seed: pill shape (1188px ≈ rounded-full), pale-green default */
 const variantClass: Record<Variant, string> = {
   default:
-    "bg-pale-green text-forest-green",
+    "bg-warm-gray text-charcoal-text",
   success:
     "bg-[#1dc479]/15 text-[#1dc479]",
   warning:
@@ -23,7 +23,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium tracking-[0.04em]",
+        "inline-flex items-center rounded-[8px] px-2.5 py-0.5 text-xs font-medium tracking-[0.04em]",
         variantClass[variant],
         className
       )}

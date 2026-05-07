@@ -38,7 +38,7 @@ function ChangeCell({ change, metric }: { change: number | null; metric: string 
   return (
     <td className="px-4 py-3 text-right">
       <span
-        className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full ${
+        className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-[8px] ${
           positive ? "bg-[#1dc479]/15 text-[#1dc479]" : "bg-[#eb3131]/10 text-[#eb3131]"
         }`}
       >
@@ -99,7 +99,7 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
   ];
 
   return (
-    <div className="flex flex-col gap-5 p-6 rounded-[16px] bg-white h-full overflow-auto">
+    <div className="flex flex-col gap-5 p-6 rounded-[26px] bg-white h-full overflow-auto">
       {/* Intro */}
       {data ? (
         <p className="text-xs text-dark-overlay leading-relaxed">
@@ -117,7 +117,7 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
         <h3 className="text-xs font-medium text-dark-overlay tracking-[0.08em] uppercase mb-3">
           Genel Performans Değerlendirmesi
         </h3>
-        <div className="overflow-auto rounded-[16px] bg-warm-gray">
+        <div className="overflow-auto rounded-[26px] bg-warm-gray">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-frosted-glass/40">
@@ -160,7 +160,7 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
           {trends.map((t) => (
             <div
               key={t.title}
-              className="border-l-[3px] border-[#eb3131] pl-4 py-3 rounded-r-[16px] bg-[#eb3131]/5"
+              className="border-l-[3px] border-[#eb3131] pl-4 py-3 rounded-r-[26px] bg-[#eb3131]/5"
             >
               <div className="text-xs font-medium text-charcoal-text mb-1">• {t.title}</div>
               <div className="text-xs text-dark-overlay leading-relaxed">{t.body}</div>
