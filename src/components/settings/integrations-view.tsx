@@ -157,20 +157,20 @@ export function IntegrationsView() {
     return (
       <Card>
         <CardHeader><CardTitle>Başlamak için</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">Önce bir mağaza seçin.</CardContent>
+        <CardContent className="text-sm text-dark-overlay">Önce bir mağaza seçin.</CardContent>
       </Card>
     );
   }
 
   if (statesQuery.isLoading) {
-    return <div className="text-sm text-slate-600 dark:text-slate-300">Entegrasyon durumları yükleniyor…</div>;
+    return <div className="text-sm text-dark-overlay">Entegrasyon durumları yükleniyor…</div>;
   }
 
   if (statesQuery.isError) {
     return (
       <Card>
         <CardHeader><CardTitle>Hata</CardTitle></CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Entegrasyon durumları alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -184,7 +184,7 @@ export function IntegrationsView() {
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Bağlantı Merkezi</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+          <CardContent className="space-y-3 text-sm text-dark-overlay">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>Gerekli entegrasyonlar bağlı değilse raporlarınız eksik görünebilir.</div>
               <Badge variant={requiredConnected === requiredKeys.length ? "success" : "warning"}>
@@ -196,7 +196,7 @@ export function IntegrationsView() {
 
         <Card>
           <CardHeader><CardTitle>Önerilen Sıra</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+          <CardContent className="space-y-2 text-sm text-dark-overlay">
             <div className="flex items-center justify-between">
               <span>1) Altyapı (Tsoft)</span>
               {states.tsoft?.connected ? <Badge variant="success">Bağlı</Badge> : <Badge variant="warning">Gerekli</Badge>}
@@ -209,7 +209,7 @@ export function IntegrationsView() {
               <span>3) Reklam Mecraları</span>
               <Badge variant="default">MVP</Badge>
             </div>
-            <div className="pt-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="pt-2 text-xs text-dark-overlay">
               Tsoft bağlandıktan sonra senkronize et butonuyla veri çekin.
             </div>
           </CardContent>
@@ -220,7 +220,7 @@ export function IntegrationsView() {
         <section key={cat} className="space-y-3">
           <div>
             <div className="text-sm font-semibold">{categoryTitle(cat)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">{categoryHint(cat)}</div>
+            <div className="text-xs text-dark-overlay">{categoryHint(cat)}</div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -238,7 +238,7 @@ export function IntegrationsView() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <CardTitle>{item.title}</CardTitle>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.description}</div>
+                        <div className="text-xs text-dark-overlay mt-1">{item.description}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         {requiredBadge(item.required)}
@@ -281,8 +281,8 @@ export function IntegrationsView() {
                     </div>
 
                     {item.key === "tsoft" && connected && (
-                      <div className="rounded-xl border border-blue-200/60 dark:border-blue-800/60 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-3">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-300">Veri Senkronizasyonu</div>
+                      <div className="rounded-xl border border-frosted-glass/50 bg-warm-gray p-4 space-y-3">
+                        <div className="text-xs font-medium text-dark-overlay">Veri Senkronizasyonu</div>
                         <div className="flex flex-wrap gap-2">
                           {[
                             { endpoint: "/api/integrations/tsoft/sync-store", label: "Ürünler" },
@@ -302,10 +302,10 @@ export function IntegrationsView() {
                                   {s.status === "loading" ? `${label} yükleniyor…` : `${label} Senkronize Et`}
                                 </Button>
                                 {s.status === "ok" && (
-                                  <span className="text-xs text-emerald-600 dark:text-emerald-400">{s.message}</span>
+                                  <span className="text-xs text-mint-confirm">{s.message}</span>
                                 )}
                                 {s.status === "error" && (
-                                  <span className="text-xs text-rose-600 dark:text-rose-400">{s.message}</span>
+                                  <span className="text-xs text-coral-alert">{s.message}</span>
                                 )}
                               </div>
                             );
@@ -315,11 +315,11 @@ export function IntegrationsView() {
                     )}
 
                     {isOpen && (
-                      <div className="rounded-xl border border-slate-200/70 dark:border-slate-800/70 p-4 space-y-3">
+                      <div className="rounded-xl border border-frosted-glass/50 p-4 space-y-3">
                         <div className="grid gap-3 md:grid-cols-2">
                           {item.fields.map((f) => (
                             <label key={f.key} className="block">
-                              <span className="text-xs text-slate-500 dark:text-slate-400">{f.label}</span>
+                              <span className="text-xs text-dark-overlay">{f.label}</span>
                               <Input
                                 type={f.secret ? "password" : "text"}
                                 value={draft[f.key] ?? ""}
@@ -338,7 +338,7 @@ export function IntegrationsView() {
                         </div>
 
                         <div className="flex items-center justify-between gap-3">
-                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                          <div className="text-xs text-dark-overlay">
                             Kayıt: Bilgileri kaydettikten sonra senkronize edin.
                           </div>
                           <Button
@@ -359,12 +359,12 @@ export function IntegrationsView() {
                     )}
 
                     {upsertMutation.isError && openKey === item.key && (
-                      <div className="text-sm text-rose-700 dark:text-rose-200">
+                      <div className="text-sm text-coral-alert">
                         {upsertMutation.error instanceof Error ? upsertMutation.error.message : "Kaydedilemedi."}
                       </div>
                     )}
                     {disconnectMutation.isError && (
-                      <div className="text-sm text-rose-700 dark:text-rose-200">
+                      <div className="text-sm text-coral-alert">
                         {disconnectMutation.error instanceof Error ? disconnectMutation.error.message : "Bağlantı kaldırılamadı."}
                       </div>
                     )}

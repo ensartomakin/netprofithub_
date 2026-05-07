@@ -116,7 +116,7 @@ export function ReturnsView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -125,7 +125,7 @@ export function ReturnsView() {
 
   if (summaryQuery.isLoading || seriesQuery.isLoading || skuQuery.isLoading) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         İade verileri yükleniyor…
       </div>
     );
@@ -137,7 +137,7 @@ export function ReturnsView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           İade analizi alınamadı. (order_items.returned_quantity alanını kontrol edin.)
         </CardContent>
       </Card>
@@ -158,7 +158,7 @@ export function ReturnsView() {
             <div className="text-2xl font-semibold">
               {formatCurrencyTRY(s.returnedRevenue)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Satır bazlı tahmini iade cirosu
             </div>
           </CardContent>
@@ -169,7 +169,7 @@ export function ReturnsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{s.returnedUnits}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Returned units
             </div>
           </CardContent>
@@ -182,7 +182,7 @@ export function ReturnsView() {
             <div className="text-2xl font-semibold">
               {s.returnRate == null ? "—" : formatPercent(s.returnRate)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               İade / (İade + Net satış)
             </div>
           </CardContent>
@@ -195,7 +195,7 @@ export function ReturnsView() {
             <div className="text-2xl font-semibold">
               {formatCurrencyTRY(s.estimatedProfitImpact)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               MVP: Kargo/iade operasyon maliyeti hariç
             </div>
           </CardContent>
@@ -238,9 +238,10 @@ export function ReturnsView() {
                     borderRadius: 12,
                     color: "white",
                   }}
-                  formatter={(value: unknown, name: string) => {
+                  formatter={(value: unknown, name: unknown) => {
                     const v = Number(value ?? 0);
-                    if (name === "returnedRevenue") return [formatCurrencyTRY(v), "İade Tutarı"];
+                    const n = String(name ?? "");
+                    if (n === "returnedRevenue") return [formatCurrencyTRY(v), "İade Tutarı"];
                     return [String(v), "İade Adedi"];
                   }}
                 />
@@ -269,12 +270,12 @@ export function ReturnsView() {
           <CardHeader>
             <CardTitle>Notlar</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+          <CardContent className="space-y-2 text-sm text-dark-overlay">
             <div className="flex items-center justify-between">
               <span>Hesap yöntemi</span>
               <Badge variant="default">MVP</Badge>
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               İade tutarı, `order_items.returned_quantity` üzerinden satır bazlı tahminlenir.
               Kargo/komisyon/hasar maliyetleri sonraki adımda eklenecek.
             </div>
@@ -321,7 +322,7 @@ export function ReturnsView() {
             <tbody>
               {skuRows.map((r) => (
                 <TRow key={r.sku}>
-                  <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">{r.sku}</TD>
+                  <TD className="font-mono text-xs text-dark-overlay">{r.sku}</TD>
                   <TD className="font-medium">{r.name}</TD>
                   <TD className="text-right tabular-nums">{r.returnedUnits}</TD>
                   <TD className="text-right tabular-nums">
@@ -333,7 +334,7 @@ export function ReturnsView() {
             </tbody>
           </Table>
           {skuRows.length === 0 && (
-            <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-4 text-sm text-dark-overlay">
               Bu aralıkta iade yok.
             </div>
           )}

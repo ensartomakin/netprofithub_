@@ -115,7 +115,7 @@ export function OrdersView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -124,7 +124,7 @@ export function OrdersView() {
 
   if (ordersQuery.isLoading) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">Siparişler yükleniyor…</div>
+      <div className="text-sm text-dark-overlay">Siparişler yükleniyor…</div>
     );
   }
 
@@ -134,7 +134,7 @@ export function OrdersView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Siparişler alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -150,7 +150,7 @@ export function OrdersView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(stats.gross)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Seçili tarih aralığı
             </div>
           </CardContent>
@@ -161,7 +161,7 @@ export function OrdersView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.paid}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sipariş</div>
+            <div className="text-xs text-dark-overlay mt-1">Sipariş</div>
           </CardContent>
         </Card>
         <Card>
@@ -170,7 +170,7 @@ export function OrdersView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.waiting}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sipariş</div>
+            <div className="text-xs text-dark-overlay mt-1">Sipariş</div>
           </CardContent>
         </Card>
         <Card>
@@ -179,7 +179,7 @@ export function OrdersView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.refunded}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sipariş</div>
+            <div className="text-xs text-dark-overlay mt-1">Sipariş</div>
           </CardContent>
         </Card>
         <Card>
@@ -190,7 +190,7 @@ export function OrdersView() {
             <div className="text-2xl font-semibold">
               {stats.aov == null ? "—" : formatCurrencyTRY(stats.aov)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Ödendi sipariş ortalaması
             </div>
           </CardContent>
@@ -228,20 +228,20 @@ export function OrdersView() {
         <CardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-4">
             <label className="block md:col-span-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Ara (Sipariş ID / Müşteri ID)
               </span>
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Örn: o12 veya c3" />
             </label>
 
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Durum</span>
+              <span className="text-xs text-dark-overlay">Durum</span>
               <select
                 value={status}
                 onChange={(e) =>
                   setStatus(e.target.value as "all" | "odendi" | "beklemede" | "iade" | "iptal")
                 }
-                className="h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+                className="h-9 w-full rounded-[26px] border border-stone bg-white px-3 text-sm text-near-black outline-none focus:border-near-black focus:ring-2 focus:ring-electric-lime/40"
               >
                 <option value="all">Tümü</option>
                 <option value="odendi">Ödendi</option>
@@ -252,7 +252,7 @@ export function OrdersView() {
             </label>
 
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Kanal</span>
+              <span className="text-xs text-dark-overlay">Kanal</span>
               <select
                 value={channel}
                 onChange={(e) =>
@@ -265,7 +265,7 @@ export function OrdersView() {
                       | "amazon"
                   )
                 }
-                className="h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+                className="h-9 w-full rounded-[26px] border border-stone bg-white px-3 text-sm text-near-black outline-none focus:border-near-black focus:ring-2 focus:ring-electric-lime/40"
               >
                 <option value="all">Tümü</option>
                 <option value="web">Web (Tsoft)</option>
@@ -292,11 +292,11 @@ export function OrdersView() {
             <tbody>
               {filtered.slice(0, 200).map((o: OrderRow) => (
                 <TRow key={o.id}>
-                  <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">{o.id}</TD>
-                  <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">
+                  <TD className="font-mono text-xs text-dark-overlay">{o.id}</TD>
+                  <TD className="font-mono text-xs text-dark-overlay">
                     {o.customer_id ?? "—"}
                   </TD>
-                  <TD className="text-xs text-slate-600 dark:text-slate-300">
+                  <TD className="text-xs text-dark-overlay">
                     {channelLabel(o.channel)}
                   </TD>
                   <TD>{statusBadge(o.status)}</TD>
@@ -310,10 +310,10 @@ export function OrdersView() {
           </Table>
 
           {filtered.length === 0 && (
-            <div className="text-sm text-slate-600 dark:text-slate-300">Sonuç yok.</div>
+            <div className="text-sm text-dark-overlay">Sonuç yok.</div>
           )}
           {filtered.length > 200 && (
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Performans için ilk 200 satır gösteriliyor. CSV ile tamamını indirebilirsiniz.
             </div>
           )}

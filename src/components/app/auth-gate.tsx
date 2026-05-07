@@ -37,7 +37,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!ready) {
     return (
       <div className="min-h-screen grid place-items-center">
-        <div className="text-sm text-slate-600 dark:text-slate-300">
+        <div className="text-sm text-dark-overlay">
           Yükleniyor…
         </div>
       </div>

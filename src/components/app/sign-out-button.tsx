@@ -12,7 +12,7 @@ export function SignOutButton() {
     <Button
       variant="ghost"
       size="sm"
-      className="gap-2 border border-slate-200/70 dark:border-slate-800/70"
+      className="gap-2 border border-frosted-glass/50"
       onClick={async () => {
         const supabase = getSupabaseClient();
         await supabase.auth.signOut();

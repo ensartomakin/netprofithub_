@@ -454,7 +454,7 @@ export function DashboardView() {
               />
             </div>
             <div className="lg:col-span-2 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[26px] bg-warm-gray p-5">
+              <div className="rounded-xl bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   Toplam Ciro (Ay)
                 </div>
@@ -468,7 +468,7 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] bg-warm-gray p-5">
+              <div className="rounded-xl bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   Hedef Sapması (Ciro)
                 </div>
@@ -491,7 +491,7 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] bg-warm-gray p-5">
+              <div className="rounded-xl bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   Hedefe Kalan Ciro
                 </div>
@@ -506,7 +506,7 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] bg-warm-gray p-5">
+              <div className="rounded-xl bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   ROI Hedef Sapması
                 </div>
@@ -523,7 +523,7 @@ export function DashboardView() {
             </div>
 
             {editingTargets && (
-              <div className="lg:col-span-3 rounded-[26px] bg-warm-gray p-5">
+              <div className="lg:col-span-3 rounded-xl bg-warm-gray p-5">
                 <div className="grid gap-3 md:grid-cols-3 items-end">
                   <label className="block">
                     <span className="text-xs text-dark-overlay">
@@ -747,13 +747,14 @@ export function DashboardView() {
                     tickLine={false}
                   />
                   <Tooltip
-                    formatter={(value: unknown, name: string) => {
+                    formatter={(value: unknown, name: unknown) => {
                       const v = Number(value ?? 0);
-                      if (name === "revenue") return [formatCurrencyTRY(v), "Gelir"];
-                      if (name === "netProfit") return [formatCurrencyTRY(v), "Net Kâr"];
-                      if (name === "adSpend") return [formatCurrencyTRY(v), "Reklam"];
-                      if (name === "cogs") return [formatCurrencyTRY(v), "COGS"];
-                      return [formatCurrencyTRY(v), name];
+                      const n = String(name ?? "");
+                      if (n === "revenue") return [formatCurrencyTRY(v), "Gelir"];
+                      if (n === "netProfit") return [formatCurrencyTRY(v), "Net Kâr"];
+                      if (n === "adSpend") return [formatCurrencyTRY(v), "Reklam"];
+                      if (n === "cogs") return [formatCurrencyTRY(v), "COGS"];
+                      return [formatCurrencyTRY(v), n];
                     }}
                     labelFormatter={(label) => `Tarih: ${label}`}
                   />

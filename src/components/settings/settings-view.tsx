@@ -39,7 +39,7 @@ export function SettingsView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya "Mağaza Oluştur" ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -53,9 +53,9 @@ export function SettingsView() {
           <CardHeader>
             <CardTitle>Ayarlar</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-slate-600 dark:text-slate-300 space-y-2">
+          <CardContent className="text-sm text-dark-overlay space-y-2">
             <div>Mağaza bazlı hedefler ve profit varsayımları burada yönetilir.</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Not: Entegrasyonlar için `Entegrasyonlar` sayfasını kullanın.
             </div>
           </CardContent>
@@ -66,13 +66,13 @@ export function SettingsView() {
             <CardTitle>Hızlı Linkler</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <a className="text-sm underline text-slate-700 dark:text-slate-200" href="/finance">
+            <a className="text-sm underline text-charcoal-text" href="/finance">
               Finans (P&amp;L)
             </a>
-            <a className="text-sm underline text-slate-700 dark:text-slate-200" href="/marketing">
+            <a className="text-sm underline text-charcoal-text" href="/marketing">
               Pazarlama
             </a>
-            <a className="text-sm underline text-slate-700 dark:text-slate-200" href="/settings/integrations">
+            <a className="text-sm underline text-charcoal-text" href="/settings/integrations">
               Entegrasyonlar
             </a>
           </CardContent>
@@ -86,7 +86,7 @@ export function SettingsView() {
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2 items-end">
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Aylık Ciro Hedefi (₺)
               </span>
               <Input
@@ -99,7 +99,7 @@ export function SettingsView() {
               />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">ROI/ROAS Hedefi</span>
+              <span className="text-xs text-dark-overlay">ROI/ROAS Hedefi</span>
               <Input
                 type="number"
                 step="0.1"
@@ -109,7 +109,7 @@ export function SettingsView() {
                 }
               />
             </label>
-            <div className="md:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="md:col-span-2 text-xs text-dark-overlay">
               Bu hedefler Dashboard'daki "Ay Özeti" alanına yansır.
             </div>
           </CardContent>
@@ -121,7 +121,7 @@ export function SettingsView() {
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2 items-end">
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Kargo Maliyeti / Sipariş (₺)
               </span>
               <Input
@@ -132,7 +132,7 @@ export function SettingsView() {
               />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Pazaryeri Komisyon Oranı (%)
               </span>
               <Input
@@ -156,7 +156,7 @@ export function SettingsView() {
           <CardTitle>Local Veri Yönetimi</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="text-sm text-slate-600 dark:text-slate-300">
+          <div className="text-sm text-dark-overlay">
             Hedefler ve profit ayarları gibi localStorage verilerini sıfırlar.
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -177,7 +177,7 @@ export function SettingsView() {
               </Button>
             )}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="text-xs text-dark-overlay">
             Bu işlem geri alınamaz. Sadece localStorage temizlenir.
           </div>
         </CardContent>

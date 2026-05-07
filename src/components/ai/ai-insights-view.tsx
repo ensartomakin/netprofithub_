@@ -116,7 +116,7 @@ export function AiInsightsView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -125,7 +125,7 @@ export function AiInsightsView() {
 
   if (insightsQuery.isLoading) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         İçgörüler hazırlanıyor…
       </div>
     );
@@ -137,7 +137,7 @@ export function AiInsightsView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           AI içgörüleri alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -157,7 +157,7 @@ export function AiInsightsView() {
             <div className="text-2xl font-semibold">
               {formatCurrencyTRY(data.forecast.next30Revenue)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Baz: son {data.basisDays} gün (moving average)
             </div>
           </CardContent>
@@ -170,7 +170,7 @@ export function AiInsightsView() {
             <div className="text-2xl font-semibold">
               {formatCurrencyTRY(data.forecast.next30NetProfit)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Net Kâr = Ciro - (COGS + Reklam + Gider + Kargo + Komisyon)
             </div>
           </CardContent>
@@ -183,7 +183,7 @@ export function AiInsightsView() {
             <div className="text-2xl font-semibold">
               {data.forecast.expectedRoas == null ? "—" : `${formatNumber(data.forecast.expectedRoas)}x`}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Son {data.basisDays} gün trendi
             </div>
           </CardContent>
@@ -194,7 +194,7 @@ export function AiInsightsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{invCounts.critical}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Kritik SKU (stok 0 veya DIR ≤ 7)
             </div>
           </CardContent>
@@ -251,12 +251,13 @@ export function AiInsightsView() {
                     borderRadius: 12,
                     color: "white",
                   }}
-                  formatter={(value: unknown, name: string) => {
+                  formatter={(value: unknown, name: unknown) => {
                     const v = Number(value ?? 0);
+                    const n = String(name ?? "");
                     const label =
-                      name === "revenue"
+                      n === "revenue"
                         ? "Ciro"
-                        : name === "netProfit"
+                        : n === "netProfit"
                           ? "Net Kâr"
                           : "Harcama";
                     return [formatCurrencyTRY(v), label];
@@ -273,7 +274,7 @@ export function AiInsightsView() {
                 />
               </LineChart>
             </ResponsiveContainer>
-            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-3 text-xs text-dark-overlay">
               Not: Kesikli ayrım yok; grafiğin son kısmı tahmindir (30 gün).
             </div>
           </CardContent>
@@ -287,7 +288,7 @@ export function AiInsightsView() {
             {(data.suggestions ?? []).map((s) => (
               <div
                 key={s.id}
-                className="rounded-lg border border-slate-200/70 dark:border-slate-800/70 p-3"
+                className="rounded-lg border border-frosted-glass/50 p-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-medium">{s.title}</div>
@@ -301,7 +302,7 @@ export function AiInsightsView() {
                           : "Bilgi"}
                   </Badge>
                 </div>
-                <div className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                <div className="text-sm text-dark-overlay mt-1">
                   {s.detail}
                 </div>
               </div>
@@ -315,7 +316,7 @@ export function AiInsightsView() {
           <CardHeader>
             <CardTitle>Özet (Son {data.basisDays} Gün)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+          <CardContent className="space-y-2 text-sm text-dark-overlay">
             <div className="flex items-center justify-between">
               <span>Ciro</span>
               <span className="font-medium tabular-nums">
@@ -340,7 +341,7 @@ export function AiInsightsView() {
                 {formatCurrencyTRY(data.last.expenses)}
               </span>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 dark:border-slate-800/70">
+            <div className="flex items-center justify-between pt-2 border-t border-frosted-glass/50">
               <span>Net Kâr</span>
               <span className="font-semibold tabular-nums">
                 {formatCurrencyTRY(data.last.netProfit)}
@@ -380,7 +381,7 @@ export function AiInsightsView() {
               <tbody>
                 {inv.slice(0, 12).map((x) => (
                   <TRow key={x.sku}>
-                    <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">
+                    <TD className="font-mono text-xs text-dark-overlay">
                       {x.sku}
                     </TD>
                     <TD className="font-medium">{x.name}</TD>
@@ -399,7 +400,7 @@ export function AiInsightsView() {
               </tbody>
             </Table>
 
-            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-3 text-xs text-dark-overlay">
               Reorder önerileri MVP: `velocity` (günlük ortalama) üzerinden hesaplanır.
             </div>
           </CardContent>

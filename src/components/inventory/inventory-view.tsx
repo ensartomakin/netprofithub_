@@ -241,7 +241,7 @@ export function InventoryView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı
           oluşturun.
         </CardContent>
@@ -251,7 +251,7 @@ export function InventoryView() {
 
   if (productsQuery.isLoading) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         Ürünler yükleniyor…
       </div>
     );
@@ -263,7 +263,7 @@ export function InventoryView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Ürünler alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -297,16 +297,16 @@ export function InventoryView() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-600 dark:text-slate-300">
+          <div className="text-sm text-dark-overlay">
             DIR (Days of Inventory Remaining) = Stok / Ortalama Günlük Satış
             (Velocity). DNR işaretli ürünler için yeniden sipariş önerilmez.
           </div>
 
           {editingPolicy && (
-            <div className="mt-4 rounded-xl border border-slate-200/70 dark:border-slate-800/70 p-4">
+            <div className="mt-4 rounded-xl border border-frosted-glass/50 p-4">
               <div className="grid gap-3 md:grid-cols-5 items-end">
                 <label className="block">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Lead Time (gün)</span>
+                  <span className="text-xs text-dark-overlay">Lead Time (gün)</span>
                   <Input
                     type="number"
                     value={(draft ?? policy).leadTimeDays}
@@ -321,7 +321,7 @@ export function InventoryView() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Güvenlik (gün)</span>
+                  <span className="text-xs text-dark-overlay">Güvenlik (gün)</span>
                   <Input
                     type="number"
                     value={(draft ?? policy).safetyDays}
@@ -336,7 +336,7 @@ export function InventoryView() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Hedef Kapsama (gün)</span>
+                  <span className="text-xs text-dark-overlay">Hedef Kapsama (gün)</span>
                   <Input
                     type="number"
                     value={(draft ?? policy).targetCoverageDays}
@@ -351,7 +351,7 @@ export function InventoryView() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Reorder Eşiği (DIR)</span>
+                  <span className="text-xs text-dark-overlay">Reorder Eşiği (DIR)</span>
                   <Input
                     type="number"
                     value={(draft ?? policy).reorderThresholdDays}
@@ -366,7 +366,7 @@ export function InventoryView() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Overstock Eşiği (DIR)</span>
+                  <span className="text-xs text-dark-overlay">Overstock Eşiği (DIR)</span>
                   <Input
                     type="number"
                     value={(draft ?? policy).overstockThresholdDays}
@@ -411,7 +411,7 @@ export function InventoryView() {
                 </Button>
               </div>
 
-              <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="mt-2 text-xs text-dark-overlay">
                 Not: Bu ayarlar şimdilik tarayıcıda saklanır (localStorage). Supabase senkronu en son yapılacak.
               </div>
             </div>
@@ -426,7 +426,7 @@ export function InventoryView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{criticalCount}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Stok 0 veya DIR ≤ 7 gün
             </div>
           </CardContent>
@@ -437,7 +437,7 @@ export function InventoryView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{reorderCount}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               DNR hariç, DIR ≤ {effectivePolicy.reorderThresholdDays} gün
             </div>
           </CardContent>
@@ -448,7 +448,7 @@ export function InventoryView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{overStockCount}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               DIR ≥ {effectivePolicy.overstockThresholdDays} gün (Liquidation Mode)
             </div>
           </CardContent>
@@ -459,7 +459,7 @@ export function InventoryView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{dnrCount}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Yeniden sipariş önerilmez
             </div>
           </CardContent>
@@ -494,20 +494,20 @@ export function InventoryView() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="text-sm text-slate-600 dark:text-slate-300">
+            <div className="text-sm text-dark-overlay">
               DIR ≤ {effectivePolicy.reorderThresholdDays} gün olan ürünlerde, {effectivePolicy.leadTimeDays} gün lead time + {effectivePolicy.safetyDays} gün güvenlik + {effectivePolicy.targetCoverageDays} gün kapsama hedeflenir.
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Tahmini teslim: {reorderPlan.etaLabel} • Toplam öneri: {reorderPlan.totalUnits} adet
             </div>
 
             {reorderPlan.rows.length === 0 ? (
-              <div className="text-sm text-slate-600 dark:text-slate-300">Sipariş önerisi yok.</div>
+              <div className="text-sm text-dark-overlay">Sipariş önerisi yok.</div>
             ) : (
               <div className="w-full overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                    <tr className="border-b border-slate-200/70 dark:border-slate-800/70">
+                  <thead className="text-xs uppercase text-dark-overlay">
+                    <tr className="border-b border-frosted-glass/50">
                       <th className="px-3 py-3 text-left font-semibold">SKU</th>
                       <th className="px-3 py-3 text-left font-semibold">Ürün</th>
                       <th className="px-3 py-3 text-right font-semibold">DIR</th>
@@ -516,8 +516,8 @@ export function InventoryView() {
                   </thead>
                   <tbody>
                     {reorderPlan.rows.map((r) => (
-                      <tr key={r.p.id} className="border-b border-slate-200/70 dark:border-slate-800/70">
-                        <td className="px-3 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">
+                      <tr key={r.p.id} className="border-b border-frosted-glass/50">
+                        <td className="px-3 py-3 font-mono text-xs text-dark-overlay">
                           {r.p.sku}
                         </td>
                         <td className="px-3 py-3 font-medium">{r.p.name}</td>
@@ -531,7 +531,7 @@ export function InventoryView() {
                 </table>
               </div>
             )}
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Not: Bu öneriler dummy veriye dayalıdır. Gerçek tedarik/MOQ/lot bilgileri entegrasyon sonrası eklenecek.
             </div>
           </CardContent>
@@ -565,20 +565,20 @@ export function InventoryView() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="text-sm text-slate-600 dark:text-slate-300">
+            <div className="text-sm text-dark-overlay">
               DIR ≥ {effectivePolicy.overstockThresholdDays} gün olan ürünlerde fazla stok için indirim kampanyası önerir.
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Toplam fazla stok: {liquidationPlan.totalExcess} adet • Hedef kapsama: {effectivePolicy.targetCoverageDays} gün
             </div>
 
             {liquidationPlan.rows.length === 0 ? (
-              <div className="text-sm text-slate-600 dark:text-slate-300">Liquidation adayı yok.</div>
+              <div className="text-sm text-dark-overlay">Liquidation adayı yok.</div>
             ) : (
               <div className="w-full overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                    <tr className="border-b border-slate-200/70 dark:border-slate-800/70">
+                  <thead className="text-xs uppercase text-dark-overlay">
+                    <tr className="border-b border-frosted-glass/50">
                       <th className="px-3 py-3 text-left font-semibold">SKU</th>
                       <th className="px-3 py-3 text-left font-semibold">Ürün</th>
                       <th className="px-3 py-3 text-right font-semibold">DIR</th>
@@ -588,8 +588,8 @@ export function InventoryView() {
                   </thead>
                   <tbody>
                     {liquidationPlan.rows.map((r) => (
-                      <tr key={r.sku} className="border-b border-slate-200/70 dark:border-slate-800/70">
-                        <td className="px-3 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">
+                      <tr key={r.sku} className="border-b border-frosted-glass/50">
+                        <td className="px-3 py-3 font-mono text-xs text-dark-overlay">
                           {r.sku}
                         </td>
                         <td className="px-3 py-3 font-medium">{r.name}</td>
@@ -606,7 +606,7 @@ export function InventoryView() {
                 </table>
               </div>
             )}
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Not: İndirim aralığı DIR bazlı heuristik bir tahmindir. Gerçek kâr/marj (COGS + iade + kargo) ile son aşamada optimize edilecek.
             </div>
           </CardContent>
@@ -643,7 +643,7 @@ export function InventoryView() {
         </CardHeader>
         <CardContent className="space-y-3">
           <label className="block max-w-md">
-            <span className="text-xs text-slate-500 dark:text-slate-400">Ara (SKU / Ürün)</span>
+            <span className="text-xs text-dark-overlay">Ara (SKU / Ürün)</span>
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Örn: NP-TEE" />
           </label>
 
@@ -662,7 +662,7 @@ export function InventoryView() {
             <tbody>
               {filtered.map(({ p, dir, overStock, critical, reorder, recommendedUnits }) => (
                 <TRow key={p.id}>
-                  <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">
+                  <TD className="font-mono text-xs text-dark-overlay">
                     {p.sku}
                   </TD>
                   <TD className="font-medium">{p.name}</TD>
@@ -688,7 +688,7 @@ export function InventoryView() {
             </tbody>
           </Table>
           {filtered.length === 0 && (
-            <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-4 text-sm text-dark-overlay">
               Sonuç yok.
             </div>
           )}
