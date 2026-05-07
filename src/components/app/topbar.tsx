@@ -1,22 +1,22 @@
 import { DateRangePicker } from "@/components/app/date-range-picker";
 import { StoreSwitcher } from "@/components/app/store-switcher";
-import { ThemeToggle } from "@/components/app/theme-toggle";
-import { SignOutButton } from "@/components/app/sign-out-button";
 
-/* Seed: snow-white bg, frosted-glass bottom border */
 export function Topbar({ title }: { title: string }) {
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-frosted-glass bg-snow-white px-6 py-3">
+    <header className="px-8 pt-8 pb-6 flex items-end justify-between gap-6">
+      {/* Left — large page title + store/date subtitle */}
       <div className="min-w-0">
-        <h1 className="truncate text-sm font-medium text-charcoal-text tracking-[0.04em] uppercase">
+        <h1 className="text-[40px] font-medium text-charcoal-text leading-[1.1] tracking-[-0.02em]">
           {title}
         </h1>
+        <div className="mt-1 flex items-center gap-1.5 text-sm text-dark-overlay">
+          <StoreSwitcher />
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <StoreSwitcher />
+
+      {/* Right — date range pills + CTA */}
+      <div className="flex items-center gap-3 shrink-0">
         <DateRangePicker />
-        <ThemeToggle />
-        <SignOutButton />
       </div>
     </header>
   );

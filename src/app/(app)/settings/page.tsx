@@ -5,7 +5,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-full">
       <Topbar title="Ayarlar" />
-      <main className="px-6 py-6 space-y-6">
+      <main className="px-8 pb-8 space-y-6">
         <SettingsView />
       </main>
     </div>

@@ -27,17 +27,24 @@ export function StoreSwitcher() {
     if (!valid) setStoreId(stores[0]!.id);
   }, [storeId, stores, setStoreId]);
 
+  const today = new Date().toLocaleDateString("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
   return (
-    <div className="flex items-center gap-2">
-      <Store className="h-4 w-4 text-slate-500 dark:text-slate-400 mr-2" />
-      <label className="relative inline-flex items-center">
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Inline store selector */}
+      <label className="relative inline-flex items-center gap-1.5">
+        <Store className="h-3.5 w-3.5 text-dark-overlay" />
+        <span className="text-sm text-dark-overlay">Mağaza:</span>
         <select
           value={storeId ?? ""}
           onChange={(e) => setStoreId(e.target.value || null)}
           disabled={storesQuery.isLoading || stores.length === 0}
           className={cn(
-            "h-9 rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 pr-9 text-sm text-slate-900 dark:text-slate-100 outline-none",
-            "focus:ring-2 focus:ring-slate-400/30"
+            "appearance-none bg-transparent text-sm text-charcoal-text font-medium outline-none cursor-pointer pr-4",
           )}
           aria-label="Mağaza seç"
         >
@@ -51,9 +58,11 @@ export function StoreSwitcher() {
             </option>
           ))}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 text-slate-500 dark:text-slate-400" />
-        <span className="sr-only">{current?.name ?? "Mağaza"}</span>
+        <ChevronDown className="pointer-events-none absolute right-0 h-3.5 w-3.5 text-dark-overlay" />
       </label>
+
+      <span className="text-dark-overlay/50">•</span>
+      <span className="text-sm text-dark-overlay">{today}</span>
 
       {stores.length === 0 && !storesQuery.isLoading && (
         <Button
@@ -64,7 +73,7 @@ export function StoreSwitcher() {
             storesQuery.refetch();
             setStoreId(created.id);
           }}
-          className="gap-2"
+          className="gap-2 ml-2"
         >
           <Plus className="h-4 w-4" />
           Mağaza Oluştur
