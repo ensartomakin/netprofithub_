@@ -34,6 +34,8 @@ import { Input } from "@/components/ui/input";
 import { BudgetWidgets } from "@/components/dashboard/budget-widgets";
 import { ActionCenter, type ActionItem } from "@/components/dashboard/action-center";
 import { useProfitOverrides } from "@/components/finance/use-profit-overrides";
+import { GenerelPerformansPanel } from "@/components/dashboard/genel-performans-panel";
+import { WeeklyComparisonPanel } from "@/components/dashboard/weekly-comparison-panel";
 
 function formatCurrencyTRY(value: number) {
   return new Intl.NumberFormat("tr-TR", {
@@ -408,6 +410,16 @@ export function DashboardView() {
 
   return (
     <div className="space-y-6">
+      {/* Top header section: Genel Performansım + Weekly Comparison */}
+      <section className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <GenerelPerformansPanel storeId={storeId} />
+        </div>
+        <div className="lg:col-span-1">
+          <WeeklyComparisonPanel storeId={storeId} />
+        </div>
+      </section>
+
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
