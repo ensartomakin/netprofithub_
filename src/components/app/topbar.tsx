@@ -3,11 +3,12 @@ import { StoreSwitcher } from "@/components/app/store-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { SignOutButton } from "@/components/app/sign-out-button";
 
+/* Navigation Bar — #f5f5eb bg, bottom border 1px #d2d2c8, no shadow */
 export function Topbar({ title }: { title: string }) {
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone bg-warm-cream dark:bg-charcoal dark:border-charcoal px-6 py-3">
+    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone bg-warm-cream px-6 py-3">
       <div className="min-w-0">
-        <h1 className="truncate text-base font-medium text-near-black dark:text-white">
+        <h1 className="truncate text-sm font-medium text-near-black tracking-[0.04em] uppercase">
           {title}
         </h1>
       </div>

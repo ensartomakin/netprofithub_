@@ -3,15 +3,16 @@ import { cn } from "@/lib/utils";
 
 type Variant = "default" | "success" | "warning" | "danger";
 
+/* Text Badge / Status Chip — 8px radius, white bg, warm palette */
 const variantClass: Record<Variant, string> = {
   default:
-    "bg-white text-near-black border-stone dark:bg-charcoal dark:text-white dark:border-charcoal",
+    "bg-parchment-card text-near-black",
   success:
-    "bg-[#1dc479]/10 text-[#1dc479] border-[#1dc479]/30",
+    "bg-[#1dc479]/12 text-[#1dc479]",
   warning:
-    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/40",
+    "bg-[#e8a020]/12 text-[#b07010]",
   danger:
-    "bg-[#eb3131]/10 text-[#eb3131] border-[#eb3131]/30",
+    "bg-[#eb3131]/10 text-[#eb3131]",
 };
 
 export function Badge({
@@ -22,7 +23,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[8px] border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-[8px] px-2.5 py-0.5 text-xs font-medium tracking-[0.06em]",
         variantClass[variant],
         className
       )}

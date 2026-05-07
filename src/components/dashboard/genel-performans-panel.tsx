@@ -34,13 +34,11 @@ function ChangeBadge({ change }: { change: number | null }) {
   const pct = `%${Math.abs(Math.round(change * 100)).toLocaleString("tr-TR")}`;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-[8px] ${
-        positive
-          ? "bg-[#1dc479]/12 text-[#1dc479]"
-          : "bg-[#eb3131]/10 text-[#eb3131]"
+      className={`inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-[8px] ${
+        positive ? "bg-[#1dc479]/12 text-[#1dc479]" : "bg-[#eb3131]/10 text-[#eb3131]"
       }`}
     >
-      {positive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+      {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
       {pct}
     </span>
   );
@@ -54,9 +52,10 @@ type StatTileProps = {
   linkLabel?: string;
 };
 
+/* Stat tile — parchment-card surface (Level 1) inside white card (Level 2) */
 function StatTile({ icon, label, value, change, linkLabel }: StatTileProps) {
   return (
-    <div className="flex flex-col gap-2 p-4 rounded-[26px] border border-stone bg-parchment-card">
+    <div className="flex flex-col gap-2 p-4 rounded-[26px] bg-parchment-card">
       <div className="flex items-center gap-1.5 text-graphite">
         {icon}
         <span className="text-xs">{label}</span>
@@ -85,14 +84,12 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-[26px] border border-stone bg-white px-4 py-3 text-xs shadow-none">
+    <div className="rounded-[26px] bg-white px-4 py-3 text-xs" style={{ boxShadow: "none" }}>
       <div className="font-medium text-near-black mb-1.5">{label}</div>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-graphite">
-            {p.name === "today" ? "Bugün" : "Dün"}:
-          </span>
+          <span className="text-graphite">{p.name === "today" ? "Bugün" : "Dün"}:</span>
           <span className="font-medium text-near-black">{formatTRY(p.value)}</span>
         </div>
       ))}
@@ -112,22 +109,16 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
   const now = new Date();
   const lastUpdated = `${String(now.getDate()).padStart(2, "0")}/${String(
     now.getMonth() + 1
-  ).padStart(2, "0")}/${now.getFullYear()} - ${String(now.getHours()).padStart(
-    2,
-    "0"
-  )}:${String(now.getMinutes()).padStart(2, "0")}:${String(
-    now.getSeconds()
-  ).padStart(2, "0")}`;
+  ).padStart(2, "0")}/${now.getFullYear()} - ${String(now.getHours()).padStart(2, "0")}:${String(
+    now.getMinutes()
+  ).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
   const todayTotal = data?.todayTotal ?? 0;
   const yesterdayTotal = data?.yesterdayTotal ?? 0;
   const todayTx = data?.todayTx ?? 0;
   const yesterdayTx = data?.yesterdayTx ?? 0;
-
-  const todayChange =
-    yesterdayTotal > 0 ? (todayTotal - yesterdayTotal) / yesterdayTotal : null;
-  const txChange =
-    yesterdayTx > 0 ? (todayTx - yesterdayTx) / yesterdayTx : null;
+  const todayChange = yesterdayTotal > 0 ? (todayTotal - yesterdayTotal) / yesterdayTotal : null;
+  const txChange = yesterdayTx > 0 ? (todayTx - yesterdayTx) / yesterdayTx : null;
 
   const points =
     data?.points ??
@@ -137,20 +128,16 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
       yesterday: 0,
     }));
 
-  const tickHours = ["00:00", "06:00", "12:00", "18:00", "23:00"];
-
   return (
-    <div className="flex flex-col gap-5 p-6 rounded-[26px] border border-stone bg-white h-full">
+    /* White card (Level 2) floating on warm-cream page (Level 0) */
+    <div className="flex flex-col gap-5 p-6 rounded-[26px] bg-white h-full">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-medium text-near-black">
-            Genel Performansım
-          </h2>
-          <div className="text-xs text-graphite mt-0.5">
-            Son Güncelleme: {lastUpdated}
-          </div>
+          <h2 className="text-base font-medium text-near-black">Genel Performansım</h2>
+          <div className="text-xs text-graphite mt-0.5">Son Güncelleme: {lastUpdated}</div>
         </div>
+        {/* Ghost button — dark on light surface */}
         <button className="inline-flex items-center gap-1.5 text-xs font-medium text-near-black border border-near-black rounded-[26px] px-4 py-2 hover:bg-electric-lime hover:border-near-black transition-colors shrink-0">
           <span className="text-sm leading-none">📊</span>
           Canlı Performansım &rsaquo;
@@ -192,28 +179,22 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
       {/* Area Chart */}
       <div className="h-36">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={points}
-            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-          >
+          <AreaChart data={points} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="gradToday2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#14140f" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#14140f" stopOpacity={0.01} />
+              <linearGradient id="gpToday" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#14140f" stopOpacity={0.1} />
+                <stop offset="95%" stopColor="#14140f" stopOpacity={0} />
               </linearGradient>
-              <linearGradient id="gradYesterday2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#d2d2c8" stopOpacity={0.5} />
-                <stop offset="95%" stopColor="#d2d2c8" stopOpacity={0.01} />
+              <linearGradient id="gpYesterday" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#d2d2c8" stopOpacity={0.6} />
+                <stop offset="95%" stopColor="#d2d2c8" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(210,210,200,0.5)"
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(210,210,200,0.5)" />
             <XAxis
               dataKey="hour"
               tick={{ fontSize: 10, fill: "#6e6e64" }}
-              ticks={tickHours}
+              ticks={["00:00", "06:00", "12:00", "18:00", "23:00"]}
               axisLine={false}
               tickLine={false}
             />
@@ -230,7 +211,7 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
               dataKey="yesterday"
               stroke="#d2d2c8"
               strokeWidth={1.5}
-              fill="url(#gradYesterday2)"
+              fill="url(#gpYesterday)"
               dot={false}
               strokeDasharray="4 2"
             />
@@ -239,7 +220,7 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
               dataKey="today"
               stroke="#14140f"
               strokeWidth={2}
-              fill="url(#gradToday2)"
+              fill="url(#gpToday)"
               dot={false}
             />
           </AreaChart>
@@ -248,33 +229,10 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatTile
-          icon={<Users size={13} />}
-          label="Toplam Görüntülenme"
-          value="—"
-          change={null}
-          linkLabel="Raporu İncele"
-        />
-        <StatTile
-          icon={<ClipboardList size={13} />}
-          label="Net Sipariş Adedi"
-          value={String(todayTx)}
-          change={txChange}
-          linkLabel="Siparişleri Gör"
-        />
-        <StatTile
-          icon={<Package size={13} />}
-          label="Net Satış Adedi"
-          value={String(todayTx)}
-          change={txChange}
-          linkLabel="Raporu İncele"
-        />
-        <StatTile
-          icon={<BarChart2 size={13} />}
-          label="Satışa Dönüş Oranı"
-          value="—"
-          change={null}
-        />
+        <StatTile icon={<Users size={13} />} label="Toplam Görüntülenme" value="—" change={null} linkLabel="Raporu İncele" />
+        <StatTile icon={<ClipboardList size={13} />} label="Net Sipariş Adedi" value={String(todayTx)} change={txChange} linkLabel="Siparişleri Gör" />
+        <StatTile icon={<Package size={13} />} label="Net Satış Adedi" value={String(todayTx)} change={txChange} linkLabel="Raporu İncele" />
+        <StatTile icon={<BarChart2 size={13} />} label="Satışa Dönüş Oranı" value="—" change={null} />
       </div>
     </div>
   );

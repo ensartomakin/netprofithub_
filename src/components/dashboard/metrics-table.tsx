@@ -94,7 +94,7 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Metrikler</CardTitle>
-          <div className="flex rounded-[26px] border border-stone p-1 bg-parchment-card">
+          <div className="flex rounded-[26px] p-1 bg-parchment-card">
             <Button
               size="sm"
               variant="ghost"

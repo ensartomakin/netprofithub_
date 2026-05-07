@@ -24,14 +24,11 @@ export function ProgressRing({
           background: `conic-gradient(#beff50 ${deg}deg, #d2d2c8 0deg)`,
         }}
       >
-        <div className="absolute inset-3 rounded-full bg-[color:var(--card)] border border-stone grid place-items-center text-center p-4">
-          <div className="text-3xl font-medium text-near-black">
-            {Math.round(pct * 100)}%
-          </div>
+        {/* Inner circle — white card surface floating over lime ring */}
+        <div className="absolute inset-3 rounded-full bg-white grid place-items-center text-center p-4">
+          <div className="text-3xl font-medium text-near-black">{Math.round(pct * 100)}%</div>
           <div className="text-xs text-graphite mt-1">{label}</div>
-          {sublabel && (
-            <div className="text-[11px] text-graphite mt-1">{sublabel}</div>
-          )}
+          {sublabel && <div className="text-[11px] text-graphite mt-1">{sublabel}</div>}
         </div>
       </div>
     </div>
