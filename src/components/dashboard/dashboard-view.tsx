@@ -338,7 +338,7 @@ export function DashboardView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-graphite">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı
           oluşturun.
         </CardContent>
@@ -348,7 +348,7 @@ export function DashboardView() {
 
   if (summaryQuery.isLoading) {
     return (
-      <div className="text-sm text-graphite">
+      <div className="text-sm text-dark-overlay">
         Veriler yükleniyor…
       </div>
     );
@@ -360,7 +360,7 @@ export function DashboardView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-[#eb3131]">
           Dashboard verileri alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -426,7 +426,7 @@ export function DashboardView() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <CardTitle>Ay Özeti</CardTitle>
-                <div className="text-xs text-graphite mt-1">
+                <div className="text-xs text-dark-overlay mt-1">
                   {monthSummary?.monthLabel ?? "—"} (hedef ve öngörü)
                 </div>
               </div>
@@ -454,30 +454,30 @@ export function DashboardView() {
               />
             </div>
             <div className="lg:col-span-2 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[26px] bg-parchment-card p-5">
-                <div className="text-xs text-graphite">
+              <div className="rounded-[16px] bg-warm-gray p-5">
+                <div className="text-xs text-dark-overlay">
                   Toplam Ciro (Ay)
                 </div>
-                <div className="text-xl font-medium text-near-black mt-1">
+                <div className="text-xl font-medium text-charcoal-text mt-1">
                   {monthSummary ? formatCurrencyTRY(monthSummary.revenueToDate) : "—"}
                 </div>
-                <div className="text-xs text-graphite mt-2">
+                <div className="text-xs text-dark-overlay mt-2">
                   {revenueChangePct == null
                     ? "Geçen aya göre kıyas yok"
                     : `${Math.round(revenueChangePct * 100)}% geçen aya göre`}
                 </div>
               </div>
 
-              <div className="rounded-[26px] bg-parchment-card p-5">
-                <div className="text-xs text-graphite">
+              <div className="rounded-[16px] bg-warm-gray p-5">
+                <div className="text-xs text-dark-overlay">
                   Hedef Sapması (Ciro)
                 </div>
-                <div className="text-xl font-medium text-near-black mt-1">
+                <div className="text-xl font-medium text-charcoal-text mt-1">
                   {monthSummary?.paceDeviation == null
                     ? "—"
                     : `${Math.round(monthSummary.paceDeviation * 100)}%`}
                 </div>
-                <div className="text-xs text-graphite mt-2">
+                <div className="text-xs text-dark-overlay mt-2">
                   {monthSummary?.paceDeviation == null
                     ? "Hedefin bugüne kadarki payına göre"
                     : monthSummary.paceDeviation >= 0
@@ -491,29 +491,29 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[26px] bg-parchment-card p-5">
-                <div className="text-xs text-graphite">
+              <div className="rounded-[16px] bg-warm-gray p-5">
+                <div className="text-xs text-dark-overlay">
                   Hedefe Kalan Ciro
                 </div>
-                <div className="text-xl font-medium text-near-black mt-1">
+                <div className="text-xl font-medium text-charcoal-text mt-1">
                   {monthSummary
                     ? formatCurrencyTRY(remainingToTarget)
                     : "—"}
                 </div>
-                <div className="text-xs text-graphite mt-2">
+                <div className="text-xs text-dark-overlay mt-2">
                   Günlük gereken:{" "}
                   {monthSummary ? formatCurrencyTRY(requiredDailyRevenue) : "—"}
                 </div>
               </div>
 
-              <div className="rounded-[26px] bg-parchment-card p-5">
-                <div className="text-xs text-graphite">
+              <div className="rounded-[16px] bg-warm-gray p-5">
+                <div className="text-xs text-dark-overlay">
                   ROI Hedef Sapması
                 </div>
-                <div className="text-xl font-medium text-near-black mt-1">
+                <div className="text-xl font-medium text-charcoal-text mt-1">
                   {roiDeviation == null ? "—" : `${Math.round(roiDeviation * 100)}%`}
                 </div>
-                <div className="text-xs text-graphite mt-2">
+                <div className="text-xs text-dark-overlay mt-2">
                   ROI (Ay):{" "}
                   {monthSummary?.roiToDate == null
                     ? "—"
@@ -523,10 +523,10 @@ export function DashboardView() {
             </div>
 
             {editingTargets && (
-              <div className="lg:col-span-3 rounded-[26px] bg-parchment-card p-5">
+              <div className="lg:col-span-3 rounded-[16px] bg-warm-gray p-5">
                 <div className="grid gap-3 md:grid-cols-3 items-end">
                   <label className="block">
-                    <span className="text-xs text-graphite">
+                    <span className="text-xs text-dark-overlay">
                       Aylık Ciro Hedefi (₺)
                     </span>
                     <Input
@@ -542,7 +542,7 @@ export function DashboardView() {
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs text-graphite">
+                    <span className="text-xs text-dark-overlay">
                       ROI/ROAS Hedefi
                     </span>
                     <Input
@@ -557,7 +557,7 @@ export function DashboardView() {
                       }
                     />
                   </label>
-                  <div className="text-xs text-graphite">
+                  <div className="text-xs text-dark-overlay">
                     Hedefler şimdilik tarayıcıda saklanır (localStorage). Son aşamada
                     Supabase’e taşınacak.
                   </div>
@@ -580,7 +580,7 @@ export function DashboardView() {
           <CardHeader>
             <CardTitle>Durum Özeti</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-graphite">
+          <CardContent className="space-y-2 text-sm text-dark-overlay">
             <div className="flex items-center justify-between">
               <span>Ay ROI</span>
               <span className="font-medium tabular-nums">
@@ -609,10 +609,10 @@ export function DashboardView() {
             <CardTitle>Net Kâr</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium text-near-black">
+            <div className="text-2xl font-medium text-charcoal-text">
               {netProfit == null ? "—" : formatCurrencyTRY(netProfit)}
             </div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               MVP: COGS `order_items` + `products.cogs` üzerinden hesaplanır. Komisyon/kargo maliyeti sonraki adım.
             </div>
           </CardContent>
@@ -622,10 +622,10 @@ export function DashboardView() {
             <CardTitle>ROAS</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium text-near-black">
+            <div className="text-2xl font-medium text-charcoal-text">
               {roas == null ? "—" : `${formatNumber(roas)}x`}
             </div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               ROAS = Gelir / Reklam Harcaması
             </div>
           </CardContent>
@@ -635,10 +635,10 @@ export function DashboardView() {
             <CardTitle>MER</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium text-near-black">
+            <div className="text-2xl font-medium text-charcoal-text">
               {mer == null ? "—" : formatNumber(mer)}
             </div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               MER = Reklam Harcaması / Gelir
             </div>
           </CardContent>
@@ -651,8 +651,8 @@ export function DashboardView() {
             <CardTitle>Toplam Sipariş</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium tabular-nums text-near-black">{rangeTotals.tx}</div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-2xl font-medium tabular-nums text-charcoal-text">{rangeTotals.tx}</div>
+            <div className="text-xs text-dark-overlay mt-1">
               Seçili aralık
             </div>
           </CardContent>
@@ -662,10 +662,10 @@ export function DashboardView() {
             <CardTitle>Ort. Sepet</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium tabular-nums text-near-black">
+            <div className="text-2xl font-medium tabular-nums text-charcoal-text">
               {rangeTotals.aov == null ? "—" : formatCurrencyTRY(rangeTotals.aov)}
             </div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Seçili aralık
             </div>
           </CardContent>
@@ -675,10 +675,10 @@ export function DashboardView() {
             <CardTitle>Toplam Harcama</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium tabular-nums text-near-black">
+            <div className="text-2xl font-medium tabular-nums text-charcoal-text">
               {formatCurrencyTRY(rangeTotals.spend)}
             </div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Reklam harcaması
             </div>
           </CardContent>
@@ -688,10 +688,10 @@ export function DashboardView() {
             <CardTitle>COS</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium tabular-nums text-near-black">
+            <div className="text-2xl font-medium tabular-nums text-charcoal-text">
               {rangeTotals.cos == null ? "—" : `${formatNumber(rangeTotals.cos * 100)}%`}
             </div>
-            <div className="text-xs text-graphite mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               COS = Harcama / Ciro
             </div>
           </CardContent>
@@ -707,11 +707,11 @@ export function DashboardView() {
                 <Badge variant="default">
                   {dateRange.preset.toUpperCase()}
                 </Badge>
-                <div className="flex rounded-[26px] p-1 bg-parchment-card">
+                <div className="flex rounded-[16px] p-1 bg-warm-gray">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={chartMode === "profit" ? "bg-near-black text-white hover:bg-near-black rounded-[26px]" : "h-7 px-3 text-xs rounded-[26px] border-transparent"}
+                    className={chartMode === "profit" ? "bg-forest-green text-snow-white hover:bg-forest-green rounded-full" : "h-7 px-3 text-xs rounded-full border-transparent"}
                     onClick={() => setChartMode("profit")}
                   >
                     Kâr
@@ -719,7 +719,7 @@ export function DashboardView() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={chartMode === "cost" ? "bg-near-black text-white hover:bg-near-black rounded-[26px]" : "h-7 px-3 text-xs rounded-[26px] border-transparent"}
+                    className={chartMode === "cost" ? "bg-forest-green text-snow-white hover:bg-forest-green rounded-full" : "h-7 px-3 text-xs rounded-full border-transparent"}
                     onClick={() => setChartMode("cost")}
                   >
                     Maliyet
@@ -732,16 +732,16 @@ export function DashboardView() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(210,210,200,0.6)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(196,199,196,0.6)" />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 11, fill: "#6e6e64" }}
+                    tick={{ fontSize: 11, fill: "#666666" }}
                     tickFormatter={(v) => String(v).slice(5)}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "#6e6e64" }}
+                    tick={{ fontSize: 11, fill: "#666666" }}
                     tickFormatter={(v) => formatCompact(Number(v))}
                     axisLine={false}
                     tickLine={false}
@@ -760,7 +760,7 @@ export function DashboardView() {
                   <Line
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#14140f"
+                    stroke="#1c3a13"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -768,7 +768,7 @@ export function DashboardView() {
                     <Line
                       type="monotone"
                       dataKey="netProfit"
-                      stroke="#beff50"
+                      stroke="#d3fa99"
                       strokeWidth={2}
                       dot={false}
                     />
@@ -777,7 +777,7 @@ export function DashboardView() {
                       <Line
                         type="monotone"
                         dataKey="adSpend"
-                        stroke="#6e6e64"
+                        stroke="#757c5d"
                         strokeWidth={2}
                         dot={false}
                       />
@@ -796,15 +796,15 @@ export function DashboardView() {
 
             <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-graphite">Brüt Satış</span>
+                <span className="text-dark-overlay">Brüt Satış</span>
                 <span className="font-medium">{formatCurrencyTRY(summary!.grossSales)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-graphite">COGS</span>
+                <span className="text-dark-overlay">COGS</span>
                 <span className="font-medium">{formatCurrencyTRY(summary!.cogsTotal)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-graphite">Reklam</span>
+                <span className="text-dark-overlay">Reklam</span>
                 <span className="font-medium">{formatCurrencyTRY(summary!.adSpend)}</span>
               </div>
             </div>
@@ -816,24 +816,24 @@ export function DashboardView() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-graphite">Kritik</span>
+              <span className="text-dark-overlay">Kritik</span>
               <Badge variant={alerts.critical > 0 ? "danger" : "success"}>
                 {alerts.critical}
               </Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-graphite">Overstock</span>
+              <span className="text-dark-overlay">Overstock</span>
               <Badge variant={alerts.overstock > 0 ? "warning" : "success"}>
                 {alerts.overstock}
               </Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-graphite">DNR</span>
+              <span className="text-dark-overlay">DNR</span>
               <Badge variant={alerts.dnr > 0 ? "warning" : "success"}>
                 {alerts.dnr}
               </Badge>
             </div>
-            <div className="pt-2 text-xs text-graphite">
+            <div className="pt-2 text-xs text-dark-overlay">
               Toplam ürün: {alerts.total}
             </div>
           </CardContent>
@@ -848,8 +848,8 @@ export function DashboardView() {
           <CardContent>
             <div className="w-full overflow-auto">
               <table className="w-full text-sm">
-                <thead className="text-xs uppercase text-graphite">
-                  <tr className="border-b border-stone/50">
+                <thead className="text-xs uppercase text-dark-overlay">
+                  <tr className="border-b border-frosted-glass/50">
                     <th className="px-3 py-3 text-left font-medium">SKU</th>
                     <th className="px-3 py-3 text-left font-medium">Ürün</th>
                     <th className="px-3 py-3 text-right font-medium">Adet</th>
@@ -862,9 +862,9 @@ export function DashboardView() {
                   {topRows.map((r) => (
                     <tr
                       key={r.sku}
-                      className="border-b border-stone/30 last:border-0"
+                      className="border-b border-frosted-glass/30 last:border-0"
                     >
-                      <td className="px-3 py-3 font-mono text-xs text-graphite">
+                      <td className="px-3 py-3 font-mono text-xs text-dark-overlay">
                         {r.sku}
                       </td>
                       <td className="px-3 py-3 font-medium">{r.name}</td>
@@ -886,12 +886,12 @@ export function DashboardView() {
               </table>
             </div>
             {topProductsQuery.isLoading && (
-              <div className="mt-4 text-sm text-graphite">
+              <div className="mt-4 text-sm text-dark-overlay">
                 Ürün kârlılığı hesaplanıyor…
               </div>
             )}
             {topRows.length === 0 && !topProductsQuery.isLoading && (
-              <div className="mt-4 text-sm text-graphite">
+              <div className="mt-4 text-sm text-dark-overlay">
                 Bu aralıkta ürün satışı bulunamadı.
               </div>
             )}
@@ -903,11 +903,11 @@ export function DashboardView() {
             <CardTitle>Pazaryeri / Kanal</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="text-xs text-graphite">
+            <div className="text-xs text-dark-overlay">
               Ödendi siparişlerde ciro payı (seçili aralık)
             </div>
             {channelBreakdown.length === 0 ? (
-              <div className="text-sm text-graphite">
+              <div className="text-sm text-dark-overlay">
                 Veri yok.
               </div>
             ) : (
@@ -915,10 +915,10 @@ export function DashboardView() {
                 {channelBreakdown.map((r) => (
                   <div key={r.channel} className="flex items-center justify-between gap-3 text-sm">
                     <div className="min-w-0">
-                      <div className="truncate text-near-black font-medium">
+                      <div className="truncate text-charcoal-text font-medium">
                         {channelLabel(r.channel)}
                       </div>
-                      <div className="text-xs text-graphite">
+                      <div className="text-xs text-dark-overlay">
                         {r.orders} sipariş
                         {r.share == null ? "" : ` • ${Math.round(r.share * 100)}%`}
                       </div>

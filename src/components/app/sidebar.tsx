@@ -37,23 +37,23 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    /* Level 1 surface — parchment-card (#fafaf5) sits one step above warm-cream page */
-    <aside className="w-[240px] shrink-0 bg-parchment-card flex flex-col">
-      {/* Logo — lime accent mark */}
-      <div className="px-5 py-5">
+    /* Level 1 — warm-gray section surface */
+    <aside className="w-[240px] shrink-0 bg-warm-gray flex flex-col">
+      {/* Logo */}
+      <div className="px-4 py-5">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-[26px] bg-electric-lime text-near-black grid place-items-center font-medium text-sm shrink-0 select-none">
+          <div className="h-9 w-9 rounded-[16px] bg-forest-green text-snow-white grid place-items-center font-medium text-sm shrink-0 select-none">
             N
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-medium text-near-black">NetProfitHub</div>
-            <div className="text-[11px] text-graphite tracking-[0.06em]">DASHBOARD</div>
+            <div className="text-sm font-medium text-charcoal-text">NetProfitHub</div>
+            <div className="text-[11px] text-dark-overlay tracking-[0.06em]">DASHBOARD</div>
           </div>
         </div>
       </div>
 
-      {/* Thin divider between logo and nav */}
-      <div className="mx-5 h-px bg-stone mb-2" />
+      {/* Divider */}
+      <div className="mx-4 h-px bg-frosted-glass mb-2" />
 
       {/* Nav links */}
       <nav className="px-3 py-2 flex-1 space-y-0.5">
@@ -67,10 +67,10 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-[26px] px-3 py-2 text-sm transition-colors",
+                "flex items-center gap-3 rounded-full px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-near-black text-white font-medium"
-                  : "text-graphite hover:bg-stone/40 hover:text-near-black"
+                  ? "bg-forest-green text-snow-white font-medium"
+                  : "text-dark-overlay hover:bg-frosted-glass/50 hover:text-charcoal-text"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

@@ -24,8 +24,8 @@ export function AdSpendBreakdown({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end justify-between">
-          <div className="text-sm text-graphite">Toplam</div>
-          <div className="text-lg font-medium text-near-black">{formatCurrencyTRY(total)}</div>
+          <div className="text-sm text-dark-overlay">Toplam</div>
+          <div className="text-lg font-medium text-charcoal-text">{formatCurrencyTRY(total)}</div>
         </div>
 
         <div className="space-y-3">
@@ -34,14 +34,14 @@ export function AdSpendBreakdown({
             return (
               <div key={r.platform} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <div className="text-graphite">{r.platform}</div>
-                  <div className="text-graphite tabular-nums">
+                  <div className="text-dark-overlay">{r.platform}</div>
+                  <div className="text-dark-overlay tabular-nums">
                     {formatCurrencyTRY(r.spend)} ({Math.round(pct * 100)}%)
                   </div>
                 </div>
-                <div className="h-1.5 rounded-full bg-parchment-card overflow-hidden">
+                <div className="h-1.5 rounded-full bg-warm-gray overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-near-black"
+                    className="h-full rounded-full bg-forest-green"
                     style={{ width: `${Math.round(pct * 100)}%` }}
                   />
                 </div>
@@ -49,7 +49,7 @@ export function AdSpendBreakdown({
             );
           })}
           {rows.length === 0 && (
-            <div className="text-sm text-graphite">
+            <div className="text-sm text-dark-overlay">
               Bu aralıkta harcama yok.
             </div>
           )}

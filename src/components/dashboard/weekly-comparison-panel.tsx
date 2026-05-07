@@ -31,15 +31,15 @@ const METRIC_LABELS: Record<string, string> = {
 
 function ChangeCell({ change, metric }: { change: number | null; metric: string }) {
   if (change == null)
-    return <td className="px-4 py-3 text-right text-graphite text-xs">—</td>;
+    return <td className="px-4 py-3 text-right text-dark-overlay text-xs">—</td>;
   const isNegativeGood = metric === "Cost";
   const positive = isNegativeGood ? change <= 0 : change >= 0;
   const pct = `${change >= 0 ? "+" : ""}${(change * 100).toLocaleString("tr-TR", { maximumFractionDigits: 1 })}%`;
   return (
     <td className="px-4 py-3 text-right">
       <span
-        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-[8px] ${
-          positive ? "bg-[#1dc479]/10 text-[#1dc479]" : "bg-[#eb3131]/10 text-[#eb3131]"
+        className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full ${
+          positive ? "bg-[#1dc479]/15 text-[#1dc479]" : "bg-[#eb3131]/10 text-[#eb3131]"
         }`}
       >
         {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
@@ -99,49 +99,48 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
   ];
 
   return (
-    /* White card (Level 2) */
-    <div className="flex flex-col gap-5 p-6 rounded-[26px] bg-white h-full overflow-auto">
+    <div className="flex flex-col gap-5 p-6 rounded-[16px] bg-white h-full overflow-auto">
       {/* Intro */}
       {data ? (
-        <p className="text-xs text-graphite leading-relaxed">
-          <span className="font-medium text-near-black">{data.currentDate}</span>{" "}
+        <p className="text-xs text-dark-overlay leading-relaxed">
+          <span className="font-medium text-charcoal-text">{data.currentDate}</span>{" "}
           tarihine ait veriler, geçen haftanın aynı günü{" "}
-          <span className="font-medium text-near-black">({data.previousDate})</span>{" "}
+          <span className="font-medium text-charcoal-text">({data.previousDate})</span>{" "}
           ile karşılaştırılmıştır.
         </p>
       ) : (
-        <p className="text-xs text-graphite">Yükleniyor…</p>
+        <p className="text-xs text-dark-overlay">Yükleniyor…</p>
       )}
 
-      {/* Comparison table — parchment surface */}
+      {/* Comparison table — warm-gray surface */}
       <div>
-        <h3 className="text-xs font-medium text-graphite tracking-[0.08em] uppercase mb-3">
+        <h3 className="text-xs font-medium text-dark-overlay tracking-[0.08em] uppercase mb-3">
           Genel Performans Değerlendirmesi
         </h3>
-        <div className="overflow-auto rounded-[26px] bg-parchment-card">
+        <div className="overflow-auto rounded-[16px] bg-warm-gray">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-stone/40">
-                <th className="px-4 py-3 text-left font-medium text-graphite">Metrik</th>
-                <th className="px-4 py-3 text-right font-medium text-graphite">
+              <tr className="border-b border-frosted-glass/40">
+                <th className="px-4 py-3 text-left font-medium text-dark-overlay">Metrik</th>
+                <th className="px-4 py-3 text-right font-medium text-dark-overlay">
                   {data ? data.currentDate.split(" ")[0] : "Son Tarih"}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-graphite">
+                <th className="px-4 py-3 text-right font-medium text-dark-overlay">
                   {data ? data.previousDate : "Önceki Hafta"}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-graphite">Değişim</th>
+                <th className="px-4 py-3 text-right font-medium text-dark-overlay">Değişim</th>
               </tr>
             </thead>
             <tbody>
               {allRows.map((row) => (
-                <tr key={row.metric} className="border-b border-stone/20 last:border-0">
-                  <td className="px-4 py-3 font-medium text-near-black">
+                <tr key={row.metric} className="border-b border-frosted-glass/20 last:border-0">
+                  <td className="px-4 py-3 font-medium text-charcoal-text">
                     {METRIC_LABELS[row.metric] ?? row.metric}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-near-black">
+                  <td className="px-4 py-3 text-right tabular-nums text-charcoal-text">
                     {formatValue(row.metric, row.current)}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-graphite">
+                  <td className="px-4 py-3 text-right tabular-nums text-dark-overlay">
                     {formatValue(row.metric, row.previous)}
                   </td>
                   <ChangeCell change={row.change} metric={row.metric} />
@@ -152,19 +151,19 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
         </div>
       </div>
 
-      {/* Trends — dark surface accent cards */}
+      {/* Trends */}
       <div>
-        <h3 className="text-xs font-medium text-graphite tracking-[0.08em] uppercase mb-3">
+        <h3 className="text-xs font-medium text-dark-overlay tracking-[0.08em] uppercase mb-3">
           Geçen Haftaya Kıyasla Önemli Eğilimler
         </h3>
         <div className="space-y-2">
           {trends.map((t) => (
             <div
               key={t.title}
-              className="border-l-[3px] border-coral-alert pl-4 py-3 rounded-r-[26px] bg-[#eb3131]/5"
+              className="border-l-[3px] border-[#eb3131] pl-4 py-3 rounded-r-[16px] bg-[#eb3131]/5"
             >
-              <div className="text-xs font-medium text-near-black mb-1">• {t.title}</div>
-              <div className="text-xs text-graphite leading-relaxed">{t.body}</div>
+              <div className="text-xs font-medium text-charcoal-text mb-1">• {t.title}</div>
+              <div className="text-xs text-dark-overlay leading-relaxed">{t.body}</div>
             </div>
           ))}
         </div>
