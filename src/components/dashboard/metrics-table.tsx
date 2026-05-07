@@ -94,12 +94,12 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Metrikler</CardTitle>
-          <div className="flex rounded-[16px] p-1 bg-warm-gray">
+          <div className="flex rounded-[26px] p-1 bg-warm-gray">
             <Button
               size="sm"
               variant="ghost"
               className={cn(
-                "h-7 px-3 text-xs rounded-full border-transparent",
+                "h-7 px-3 text-xs rounded-[26px] border-transparent",
                 view === "daily" && "bg-forest-green text-snow-white hover:bg-forest-green"
               )}
               onClick={() => setView("daily")}
@@ -110,7 +110,7 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
               size="sm"
               variant="ghost"
               className={cn(
-                "h-7 px-3 text-xs rounded-full border-transparent",
+                "h-7 px-3 text-xs rounded-[26px] border-transparent",
                 view === "monthly" && "bg-forest-green text-snow-white hover:bg-forest-green"
               )}
               onClick={() => setView("monthly")}

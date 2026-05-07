@@ -454,7 +454,7 @@ export function DashboardView() {
               />
             </div>
             <div className="lg:col-span-2 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[16px] bg-warm-gray p-5">
+              <div className="rounded-[26px] bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   Toplam Ciro (Ay)
                 </div>
@@ -468,7 +468,7 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[16px] bg-warm-gray p-5">
+              <div className="rounded-[26px] bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   Hedef Sapması (Ciro)
                 </div>
@@ -491,7 +491,7 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[16px] bg-warm-gray p-5">
+              <div className="rounded-[26px] bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   Hedefe Kalan Ciro
                 </div>
@@ -506,7 +506,7 @@ export function DashboardView() {
                 </div>
               </div>
 
-              <div className="rounded-[16px] bg-warm-gray p-5">
+              <div className="rounded-[26px] bg-warm-gray p-5">
                 <div className="text-xs text-dark-overlay">
                   ROI Hedef Sapması
                 </div>
@@ -523,7 +523,7 @@ export function DashboardView() {
             </div>
 
             {editingTargets && (
-              <div className="lg:col-span-3 rounded-[16px] bg-warm-gray p-5">
+              <div className="lg:col-span-3 rounded-[26px] bg-warm-gray p-5">
                 <div className="grid gap-3 md:grid-cols-3 items-end">
                   <label className="block">
                     <span className="text-xs text-dark-overlay">
@@ -707,11 +707,11 @@ export function DashboardView() {
                 <Badge variant="default">
                   {dateRange.preset.toUpperCase()}
                 </Badge>
-                <div className="flex rounded-[16px] p-1 bg-warm-gray">
+                <div className="flex rounded-[26px] p-1 bg-warm-gray">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={chartMode === "profit" ? "bg-forest-green text-snow-white hover:bg-forest-green rounded-full" : "h-7 px-3 text-xs rounded-full border-transparent"}
+                    className={chartMode === "profit" ? "bg-forest-green text-snow-white hover:bg-forest-green rounded-[26px]" : "h-7 px-3 text-xs rounded-[26px] border-transparent"}
                     onClick={() => setChartMode("profit")}
                   >
                     Kâr
@@ -719,7 +719,7 @@ export function DashboardView() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={chartMode === "cost" ? "bg-forest-green text-snow-white hover:bg-forest-green rounded-full" : "h-7 px-3 text-xs rounded-full border-transparent"}
+                    className={chartMode === "cost" ? "bg-forest-green text-snow-white hover:bg-forest-green rounded-[26px]" : "h-7 px-3 text-xs rounded-[26px] border-transparent"}
                     onClick={() => setChartMode("cost")}
                   >
                     Maliyet
@@ -732,16 +732,16 @@ export function DashboardView() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(196,199,196,0.6)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(210,210,200,0.6)" />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 11, fill: "#666666" }}
+                    tick={{ fontSize: 11, fill: "#6e6e64" }}
                     tickFormatter={(v) => String(v).slice(5)}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "#666666" }}
+                    tick={{ fontSize: 11, fill: "#6e6e64" }}
                     tickFormatter={(v) => formatCompact(Number(v))}
                     axisLine={false}
                     tickLine={false}
@@ -760,7 +760,7 @@ export function DashboardView() {
                   <Line
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#1c3a13"
+                    stroke="#14140f"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -768,7 +768,7 @@ export function DashboardView() {
                     <Line
                       type="monotone"
                       dataKey="netProfit"
-                      stroke="#d3fa99"
+                      stroke="#beff50"
                       strokeWidth={2}
                       dot={false}
                     />
@@ -777,7 +777,7 @@ export function DashboardView() {
                       <Line
                         type="monotone"
                         dataKey="adSpend"
-                        stroke="#757c5d"
+                        stroke="#6e6e64"
                         strokeWidth={2}
                         dot={false}
                       />

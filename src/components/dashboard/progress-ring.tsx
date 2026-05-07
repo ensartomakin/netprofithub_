@@ -21,7 +21,7 @@ export function ProgressRing({
       <div
         className="relative h-44 w-44 rounded-full"
         style={{
-          background: `conic-gradient(#d3fa99 ${deg}deg, #c4c7c4 0deg)`,
+          background: `conic-gradient(#beff50 ${deg}deg, #d2d2c8 0deg)`,
         }}
       >
         {/* Inner circle — white card surface floating over lime ring */}
