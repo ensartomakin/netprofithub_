@@ -43,19 +43,19 @@ export default function LoginPage() {
           <CardTitle>NetProfitHub&apos;a Giriş</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm text-dark-overlay">
             E-posta adresinize giriş bağlantısı göndereceğiz.
           </p>
           <form onSubmit={onSubmit} className="space-y-3">
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">E-posta</span>
+              <span className="text-xs text-dark-overlay">E-posta</span>
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
                 required
                 placeholder="ornek@domain.com"
-                className="mt-1 w-full h-10 rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/60 dark:bg-slate-950/30 px-3 outline-none focus:ring-2 focus:ring-slate-400/30"
+                className="mt-1 w-full h-10 rounded-[26px] border border-stone bg-white px-4 outline-none focus:border-near-black focus:ring-2 focus:ring-electric-lime/40"
               />
             </label>
             <Button type="submit" disabled={loading}>
@@ -63,12 +63,12 @@ export default function LoginPage() {
             </Button>
           </form>
           {sent && (
-            <div className="text-sm text-emerald-700 dark:text-emerald-200">
+            <div className="text-sm text-mint-confirm">
               Bağlantı gönderildi. E-postanızı kontrol edin (spam klasörüne de bakın).
             </div>
           )}
           {error && (
-            <div className="text-sm text-rose-700 dark:text-rose-200">{error}</div>
+            <div className="text-sm text-coral-alert">{error}</div>
           )}
         </CardContent>
       </Card>

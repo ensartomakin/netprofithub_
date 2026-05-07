@@ -19,7 +19,7 @@ export function THead({
   return (
     <thead
       className={cn(
-        "text-xs uppercase text-slate-500 dark:text-slate-400",
+        "text-xs uppercase text-dark-overlay",
         className
       )}
       {...props}
@@ -34,7 +34,7 @@ export function TRow({
   return (
     <tr
       className={cn(
-        "border-b border-slate-200/70 dark:border-slate-800/70",
+        "border-b border-frosted-glass/50",
         className
       )}
       {...props}

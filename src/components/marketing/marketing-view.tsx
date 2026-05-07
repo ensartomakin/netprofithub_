@@ -402,7 +402,7 @@ export function MarketingView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı
           oluşturun.
         </CardContent>
@@ -418,7 +418,7 @@ export function MarketingView() {
     ordersQuery.isLoading
   ) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         Veriler yükleniyor…
       </div>
     );
@@ -436,7 +436,7 @@ export function MarketingView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Pazarlama verileri alınamadı. (Supabase tabloları/izinleri kontrol
           edin.)
         </CardContent>
@@ -460,7 +460,7 @@ export function MarketingView() {
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
           <label className="block">
-            <span className="text-xs text-slate-500 dark:text-slate-400">Kanal</span>
+            <span className="text-xs text-dark-overlay">Kanal</span>
             <select
               value={channelFilter}
               onChange={(e) =>
@@ -468,7 +468,7 @@ export function MarketingView() {
                   e.target.value as "all" | "web" | "trendyol" | "hepsiburada" | "amazon"
                 )
               }
-              className="mt-1 h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+              className="mt-1 h-9 w-full rounded-[26px] border border-stone bg-white px-3 text-sm text-near-black outline-none focus:border-near-black focus:ring-2 focus:ring-electric-lime/40"
             >
               <option value="all">Tümü</option>
               <option value="web">Web (Tsoft)</option>
@@ -478,11 +478,11 @@ export function MarketingView() {
             </select>
           </label>
           <label className="block">
-            <span className="text-xs text-slate-500 dark:text-slate-400">Reklam Platformu</span>
+            <span className="text-xs text-dark-overlay">Reklam Platformu</span>
             <select
               value={platformFilter}
               onChange={(e) => setPlatformFilter(e.target.value)}
-              className="mt-1 h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+              className="mt-1 h-9 w-full rounded-[26px] border border-stone bg-white px-3 text-sm text-near-black outline-none focus:border-near-black focus:ring-2 focus:ring-electric-lime/40"
             >
               <option value="all">Tümü</option>
               {availablePlatforms.map((p) => (
@@ -492,7 +492,7 @@ export function MarketingView() {
               ))}
             </select>
           </label>
-          <div className="text-xs text-slate-500 dark:text-slate-400 md:col-span-2">
+          <div className="text-xs text-dark-overlay md:col-span-2">
             Not: Kanal filtresi, kampanya “net kâr atfını” kanalın günlük ciro payına göre daraltır (simülasyon).
           </div>
         </CardContent>
@@ -505,7 +505,7 @@ export function MarketingView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(adSpend)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Seçili tarih aralığı (mağaza bazlı)
             </div>
           </CardContent>
@@ -518,7 +518,7 @@ export function MarketingView() {
             <div className="text-2xl font-semibold">
               {roas == null ? "—" : `${formatNumber(roas)}x`}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               ROAS = Gelir / Reklam Harcaması
             </div>
           </CardContent>
@@ -531,7 +531,7 @@ export function MarketingView() {
             <div className="text-2xl font-semibold">
               {mer == null ? "—" : formatNumber(mer)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               MER = Reklam Harcaması / Gelir
             </div>
           </CardContent>
@@ -590,12 +590,13 @@ export function MarketingView() {
                     borderRadius: 12,
                     color: "white",
                   }}
-                  formatter={(value: unknown, name: string) => {
+                  formatter={(value: unknown, name: unknown) => {
                     const v = Number(value ?? 0);
-                    if (name === "roi") return [`${formatNumber(v)}x`, "ROAS"];
-                    if (name === "adSpend") return [formatCurrencyTRY(v), "Harcama"];
-                    if (name === "revenue") return [formatCurrencyTRY(v), "Gelir"];
-                    return [String(value), name];
+                    const n = String(name ?? "");
+                    if (n === "roi") return [`${formatNumber(v)}x`, "ROAS"];
+                    if (n === "adSpend") return [formatCurrencyTRY(v), "Harcama"];
+                    if (n === "revenue") return [formatCurrencyTRY(v), "Gelir"];
+                    return [String(value), n];
                   }}
                   labelFormatter={(label: unknown) => String(label)}
                 />
@@ -664,7 +665,7 @@ export function MarketingView() {
                     <TD className="text-right tabular-nums">{formatCurrencyTRY(r.revenue)}</TD>
                     <TD className="text-right tabular-nums">{formatCurrencyTRY(r.spend)}</TD>
                     <TD className="text-right tabular-nums">
-                      <span className={r.profit < 0 ? "text-rose-700 dark:text-rose-200" : undefined}>
+                      <span className={r.profit < 0 ? "text-coral-alert" : undefined}>
                         {formatCurrencyTRY(r.profit)}
                       </span>
                     </TD>
@@ -674,11 +675,11 @@ export function MarketingView() {
               </tbody>
             </Table>
             {channelPerformance.length === 0 && (
-              <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+              <div className="mt-4 text-sm text-dark-overlay">
                 Kanal verisi yok.
               </div>
             )}
-            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-3 text-xs text-dark-overlay">
               Not: Harcama ve net kâr, gün bazında kanalın ciro payına göre dağıtılır (MVP simülasyonu).
             </div>
           </CardContent>
@@ -707,7 +708,7 @@ export function MarketingView() {
                     <TD className="text-right tabular-nums">{formatCurrencyTRY(r.spend)}</TD>
                     <TD className="text-right tabular-nums">{formatCurrencyTRY(r.revenue)}</TD>
                     <TD className="text-right tabular-nums">
-                      <span className={r.profit < 0 ? "text-rose-700 dark:text-rose-200" : undefined}>
+                      <span className={r.profit < 0 ? "text-coral-alert" : undefined}>
                         {formatCurrencyTRY(r.profit)}
                       </span>
                     </TD>
@@ -718,7 +719,7 @@ export function MarketingView() {
               </tbody>
             </Table>
             {platformAttribution.length === 0 && (
-              <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+              <div className="mt-4 text-sm text-dark-overlay">
                 Platform özeti için veri yok.
               </div>
             )}
@@ -742,7 +743,7 @@ export function MarketingView() {
             <tbody>
               {campaignRows.map((r) => (
                 <TRow key={`${r.platform}:${r.campaign}`}>
-                  <TD className="text-slate-600 dark:text-slate-300">
+                  <TD className="text-dark-overlay">
                     {r.platform}
                   </TD>
                   <TD className="font-medium">{r.campaign}</TD>
@@ -753,11 +754,11 @@ export function MarketingView() {
               ))}
             </tbody>
           </Table>
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-3 text-xs text-dark-overlay">
             Not: Kampanya bazlı “Net Kâr” atfı (UTM/attribution) en son adımda eklenecek.
           </div>
           {campaignRows.length === 0 && (
-            <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-4 text-sm text-dark-overlay">
               Kampanya verisi yok.
             </div>
           )}
@@ -769,7 +770,7 @@ export function MarketingView() {
           <div className="flex items-start justify-between gap-2">
             <div>
               <CardTitle>Kampanya Net Kâr Atfı</CardTitle>
-              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-xs text-dark-overlay mt-1">
                 MVP simülasyonu: Günlük ciro/COGS/kargo/komisyon “harcama payına” göre kampanyalara dağıtılır. Gerçek UTM atfı en son adımda.
               </div>
             </div>
@@ -822,12 +823,12 @@ export function MarketingView() {
             <tbody>
               {campaignAttribution.map((r) => (
                 <TRow key={`${r.platform}:${r.campaign}`}>
-                  <TD className="text-slate-600 dark:text-slate-300">{r.platform}</TD>
+                  <TD className="text-dark-overlay">{r.platform}</TD>
                   <TD className="font-medium">{r.campaign}</TD>
                   <TD className="text-right tabular-nums">{formatCurrencyTRY(r.spend)}</TD>
                   <TD className="text-right tabular-nums">{formatCurrencyTRY(r.revenue)}</TD>
                   <TD className="text-right tabular-nums">
-                    <span className={r.profit < 0 ? "text-rose-700 dark:text-rose-200" : undefined}>
+                    <span className={r.profit < 0 ? "text-coral-alert" : undefined}>
                       {formatCurrencyTRY(r.profit)}
                     </span>
                   </TD>
@@ -843,7 +844,7 @@ export function MarketingView() {
           </Table>
 
           {campaignAttribution.length === 0 && (
-            <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-4 text-sm text-dark-overlay">
               Bu aralıkta kampanya verisi yok.
             </div>
           )}

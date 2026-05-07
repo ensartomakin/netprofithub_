@@ -273,7 +273,7 @@ export function PnlView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -287,7 +287,7 @@ export function PnlView() {
     dailyQuery.isLoading
   ) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         Finans verileri yükleniyor…
       </div>
     );
@@ -304,7 +304,7 @@ export function PnlView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           P&amp;L verileri alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -326,7 +326,7 @@ export function PnlView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(netProfit)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               True Profit (MVP) — komisyon/kargo detayları genişletilecek
             </div>
           </CardContent>
@@ -337,7 +337,7 @@ export function PnlView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(s.grossSales)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Seçili tarih aralığı
             </div>
           </CardContent>
@@ -348,7 +348,7 @@ export function PnlView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(s.adSpend)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Google/Meta/TikTok/Pinterest (dummy)
             </div>
           </CardContent>
@@ -359,7 +359,7 @@ export function PnlView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(fixedExpenses)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               `expenses` tablosu + demo girişleri
             </div>
           </CardContent>
@@ -404,14 +404,15 @@ export function PnlView() {
                     borderRadius: 12,
                     color: "white",
                   }}
-                  formatter={(value: unknown, name: string) => {
+                  formatter={(value: unknown, name: unknown) => {
                     const v = Number(value ?? 0);
+                    const n = String(name ?? "");
                     const label =
-                      name === "grossSales"
+                      n === "grossSales"
                         ? "Ciro"
-                        : name === "adSpend"
+                        : n === "adSpend"
                           ? "Reklam"
-                          : name === "cogs"
+                          : n === "cogs"
                             ? "COGS"
                             : "Net Kâr";
                     return [formatCurrencyTRY(v), label];
@@ -430,7 +431,7 @@ export function PnlView() {
           <CardHeader>
             <CardTitle>P&amp;L Özeti</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+          <CardContent className="space-y-2 text-sm text-dark-overlay">
             {pnlRows.map((r) => (
               <div key={r.label} className="flex items-center justify-between">
                 <span>{r.label}</span>
@@ -439,7 +440,7 @@ export function PnlView() {
                 </span>
               </div>
             ))}
-            <div className="pt-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="pt-2 text-xs text-dark-overlay">
               Not: Pazaryeri komisyonu/kargo iade maliyeti gibi kalemler sonraki adımda detaylanacak.
             </div>
           </CardContent>
@@ -480,17 +481,18 @@ export function PnlView() {
                   borderRadius: 12,
                   color: "white",
                 }}
-                formatter={(value: unknown, name: string, props: unknown) => {
+                formatter={(value: unknown, name: unknown, props: unknown) => {
                   const v = Number(value ?? 0);
-                  if (name === "delta") {
+                  const n = String(name ?? "");
+                  if (n === "delta") {
                     const p = props as { payload?: { label?: string; value?: number } } | null;
                     const label = String(p?.payload?.label ?? "");
                     const raw = Number(p?.payload?.value ?? 0);
                     const sign = label === "Brüt Satış" ? 1 : raw >= 0 ? 1 : -1;
                     return [formatCurrencyTRY(sign * v), "Değişim"];
                   }
-                  if (name === "end") return [formatCurrencyTRY(v), "Kümülatif"];
-                  return [formatCurrencyTRY(v), name];
+                  if (n === "end") return [formatCurrencyTRY(v), "Kümülatif"];
+                  return [formatCurrencyTRY(v), n];
                 }}
               />
               <Bar dataKey="base" stackId="a" fill="rgba(0,0,0,0)" />
@@ -524,7 +526,7 @@ export function PnlView() {
         <CardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-4">
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Kargo Maliyeti / Sipariş (₺)
               </span>
               <Input
@@ -535,7 +537,7 @@ export function PnlView() {
               />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Pazaryeri Komisyon Oranı (%)
               </span>
               <Input
@@ -548,7 +550,7 @@ export function PnlView() {
               />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 İade Maliyeti Oranı (%)
               </span>
               <Input
@@ -564,7 +566,7 @@ export function PnlView() {
               </Button>
             </div>
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="text-xs text-dark-overlay">
             Bu ayarlar tarayıcıda saklanır (localStorage). Supabase’e kaydetme en son aşamada açılacak.
             {" "}Gerçek kargo/komisyon kalemleri entegrasyonlar tamamlandığında API’den çekilecek.
           </div>
@@ -578,22 +580,22 @@ export function PnlView() {
         <CardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-4 items-end">
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Kategori</span>
+              <span className="text-xs text-dark-overlay">Kategori</span>
               <Input value={ruleCategory} onChange={(e) => setRuleCategory(e.target.value)} placeholder="Örn: Depo" />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Kural</span>
+              <span className="text-xs text-dark-overlay">Kural</span>
               <select
                 value={ruleType}
                 onChange={(e) => setRuleType(e.target.value as "monthly_fixed" | "revenue_rate")}
-                className="mt-1 h-9 w-full rounded-md border border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur px-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400/30"
+                className="mt-1 h-9 w-full rounded-[26px] border border-stone bg-white px-3 text-sm text-near-black outline-none focus:border-near-black focus:ring-2 focus:ring-electric-lime/40"
               >
                 <option value="monthly_fixed">Aylık Sabit (₺)</option>
                 <option value="revenue_rate">Ciro Oranı (%)</option>
               </select>
             </label>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-dark-overlay">
                 Değer ({ruleType === "revenue_rate" ? "%" : "₺"})
               </span>
               <Input
@@ -622,7 +624,7 @@ export function PnlView() {
             </div>
           </div>
 
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="text-xs text-dark-overlay">
             Kurallar, bu dönemin sabit giderlerine otomatik eklenir. (Demo/MVP: entegrasyon sonrası gerçek muhasebe akışıyla güncellenecek.)
           </div>
 
@@ -649,7 +651,7 @@ export function PnlView() {
                 return (
                   <TRow key={r.id}>
                     <TD className="font-medium">{r.category}</TD>
-                    <TD className="text-slate-600 dark:text-slate-300">
+                    <TD className="text-dark-overlay">
                       {r.type === "monthly_fixed" ? "Aylık Sabit" : "Ciro Oranı"}
                     </TD>
                     <TD className="text-right tabular-nums">
@@ -674,7 +676,7 @@ export function PnlView() {
             </tbody>
           </Table>
           {rules.length === 0 && (
-            <div className="text-sm text-slate-600 dark:text-slate-300">Kural yok.</div>
+            <div className="text-sm text-dark-overlay">Kural yok.</div>
           )}
         </CardContent>
       </Card>
@@ -706,11 +708,11 @@ export function PnlView() {
           <CardContent className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Kategori</span>
+                <span className="text-xs text-dark-overlay">Kategori</span>
                 <Input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Örn: Kira" />
               </label>
               <label className="block">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Tutar (₺)</span>
+                <span className="text-xs text-dark-overlay">Tutar (₺)</span>
                 <Input
                   type="number"
                   step="1"
@@ -719,7 +721,7 @@ export function PnlView() {
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Tarih</span>
+                <span className="text-xs text-dark-overlay">Tarih</span>
                 <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
               </label>
               <label className="flex items-end gap-2">
@@ -728,7 +730,7 @@ export function PnlView() {
                   checked={newRecurring}
                   onChange={(e) => setNewRecurring(e.target.checked)}
                 />
-                <span className="text-sm text-slate-600 dark:text-slate-300">Tekrarlı</span>
+                <span className="text-sm text-dark-overlay">Tekrarlı</span>
               </label>
             </div>
 
@@ -751,7 +753,7 @@ export function PnlView() {
             </div>
 
             {(createMutation.isError || deleteMutation.isError) && (
-              <div className="text-sm text-rose-700 dark:text-rose-200">
+              <div className="text-sm text-coral-alert">
                 {(createMutation.error instanceof Error && createMutation.error.message) ||
                   (deleteMutation.error instanceof Error && deleteMutation.error.message) ||
                   "İşlem başarısız."}
@@ -823,12 +825,12 @@ export function PnlView() {
           <CardContent className="space-y-3">
             {expenseByCategory.map((x) => (
               <div key={x.category} className="flex items-center justify-between text-sm">
-                <div className="text-slate-600 dark:text-slate-300">{x.category}</div>
+                <div className="text-dark-overlay">{x.category}</div>
                 <div className="font-medium tabular-nums">{formatCurrencyTRY(x.amount)}</div>
               </div>
             ))}
             {expenseByCategory.length === 0 && (
-              <div className="text-sm text-slate-600 dark:text-slate-300">Gider yok.</div>
+              <div className="text-sm text-dark-overlay">Gider yok.</div>
             )}
           </CardContent>
         </Card>

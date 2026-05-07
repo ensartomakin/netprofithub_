@@ -204,7 +204,7 @@ export function ReportsView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -218,7 +218,7 @@ export function ReportsView() {
     expensesQuery.isLoading
   ) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">Raporlar hazırlanıyor…</div>
+      <div className="text-sm text-dark-overlay">Raporlar hazırlanıyor…</div>
     );
   }
 
@@ -228,7 +228,7 @@ export function ReportsView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Rapor verileri alınamadı.
         </CardContent>
       </Card>
@@ -248,7 +248,7 @@ export function ReportsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(summary.grossSales)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Seçili aralık</div>
+            <div className="text-xs text-dark-overlay mt-1">Seçili aralık</div>
           </CardContent>
         </Card>
         <Card>
@@ -257,7 +257,7 @@ export function ReportsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{formatCurrencyTRY(summary.adSpend)}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Toplam harcama</div>
+            <div className="text-xs text-dark-overlay mt-1">Toplam harcama</div>
           </CardContent>
         </Card>
         <Card>
@@ -268,7 +268,7 @@ export function ReportsView() {
             <div className="text-2xl font-semibold">
               {roas == null ? "—" : `${formatNumber(roas)}x`}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               MER: {mer == null ? "—" : formatNumber(mer)}
             </div>
           </CardContent>
@@ -306,7 +306,7 @@ export function ReportsView() {
             <CardTitle>CSV Export Merkezi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="text-sm text-slate-600 dark:text-slate-300">
+            <div className="text-sm text-dark-overlay">
               Entegrasyon/gerçek veri çekme hariç: mevcut dummy verileri raporlamak için kullanılabilir.
             </div>
 
@@ -502,7 +502,7 @@ export function ReportsView() {
               </Button>
             </div>
 
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-dark-overlay">
               Not: Kampanya atfı bu aşamada simülasyondur (harcama payı). Gerçek UTM/attribution entegrasyonla gelecektir.
             </div>
           </CardContent>

@@ -63,7 +63,7 @@ export function CohortTable({
   const headers = Array.from({ length: maxOffset + 1 }, (_, i) => i);
 
   return (
-    <div className="overflow-auto rounded-xl border border-slate-200/70 dark:border-slate-800/70">
+    <div className="overflow-auto rounded-xl border border-frosted-glass/50">
       <table className="w-full text-sm">
         <THead>
           <TRow className="border-b-0">
@@ -83,7 +83,7 @@ export function CohortTable({
                 const cell = r.cells[i];
                 if (!cell) {
                   return (
-                    <TD key={i} className="text-right text-slate-400">
+                    <TD key={i} className="text-right text-dark-overlay">
                       —
                     </TD>
                   );

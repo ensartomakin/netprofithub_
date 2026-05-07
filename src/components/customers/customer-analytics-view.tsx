@@ -51,7 +51,7 @@ export function CustomerAnalyticsView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı oluşturun.
         </CardContent>
       </Card>
@@ -60,7 +60,7 @@ export function CustomerAnalyticsView() {
 
   if (query.isLoading) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         Müşteri analitiği yükleniyor…
       </div>
     );
@@ -72,7 +72,7 @@ export function CustomerAnalyticsView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Müşteri analitiği alınamadı. (orders.customer_id alanını kontrol edin.)
         </CardContent>
       </Card>
@@ -86,7 +86,7 @@ export function CustomerAnalyticsView() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <CardTitle>Cohort Analizi</CardTitle>
-              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-xs text-dark-overlay mt-1">
                 MVP notu: İlk satın alma kohortu seçili tarih aralığından türetilir (tam “all-time” cohort son adımda).
               </div>
             </div>
@@ -135,7 +135,7 @@ export function CustomerAnalyticsView() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-slate-500 dark:text-slate-400">Görünüm</span>
+            <span className="text-xs text-dark-overlay">Görünüm</span>
             <Button
               type="button"
               variant={months === 3 ? "secondary" : "ghost"}
@@ -171,7 +171,7 @@ export function CustomerAnalyticsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{rep?.customers ?? 0}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Benzersiz müşteri
             </div>
           </CardContent>
@@ -184,7 +184,7 @@ export function CustomerAnalyticsView() {
             <div className="text-2xl font-semibold">
               {rep?.repeat2Pct == null ? "—" : formatPercent(rep.repeat2Pct)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               ≥ 2 sipariş
             </div>
           </CardContent>
@@ -197,7 +197,7 @@ export function CustomerAnalyticsView() {
             <div className="text-2xl font-semibold">
               {rep?.repeat3Pct == null ? "—" : formatPercent(rep.repeat3Pct)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               ≥ 3 sipariş
             </div>
           </CardContent>
@@ -210,7 +210,7 @@ export function CustomerAnalyticsView() {
             <div className="text-2xl font-semibold">
               {rep?.repeat4Pct == null ? "—" : formatPercent(rep.repeat4Pct)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               ≥ 4 sipariş
             </div>
           </CardContent>
@@ -222,12 +222,12 @@ export function CustomerAnalyticsView() {
           <div className="flex items-start justify-between gap-2">
             <div>
               <CardTitle>Cohort Üçgeni</CardTitle>
-              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-xs text-dark-overlay mt-1">
                 Hücre üzerine gelerek detay görebilirsiniz.
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="text-xs text-dark-overlay">
                 Son kohort M+1:{" "}
                 <span className="font-medium">
                   {lastM1 == null ? "—" : formatPercent(lastM1)}
@@ -262,7 +262,7 @@ export function CustomerAnalyticsView() {
         </CardHeader>
         <CardContent>
           {cohortRows.length === 0 ? (
-            <div className="text-sm text-slate-600 dark:text-slate-300">
+            <div className="text-sm text-dark-overlay">
               Bu aralıkta cohort oluşturmak için yeterli sipariş yok.
             </div>
           ) : (

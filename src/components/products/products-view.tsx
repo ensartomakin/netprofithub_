@@ -299,7 +299,7 @@ export function ProductsView() {
         <CardHeader>
           <CardTitle>Başlamak için</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="text-sm text-dark-overlay">
           Üst bardan bir mağaza seçin veya “Mağaza Oluştur” ile ilk mağazanızı
           oluşturun.
         </CardContent>
@@ -309,7 +309,7 @@ export function ProductsView() {
 
   if (productsQuery.isLoading) {
     return (
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="text-sm text-dark-overlay">
         Ürünler yükleniyor…
       </div>
     );
@@ -321,7 +321,7 @@ export function ProductsView() {
         <CardHeader>
           <CardTitle>Hata</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-rose-700 dark:text-rose-200">
+        <CardContent className="text-sm text-coral-alert">
           Ürünler alınamadı. (Supabase tabloları/izinleri kontrol edin.)
         </CardContent>
       </Card>
@@ -358,7 +358,7 @@ export function ProductsView() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="md:col-span-2">
               <label className="block">
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-dark-overlay">
                   Ara (SKU veya ürün adı)
                 </span>
                 <Input
@@ -368,7 +368,7 @@ export function ProductsView() {
                 />
               </label>
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 md:self-end">
+            <div className="text-xs text-dark-overlay md:self-end">
               Kârlılık hesapları `order_items` verisine göre yapılır (tarih
               aralığına bağlı).
             </div>
@@ -478,7 +478,7 @@ export function ProductsView() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between gap-3 text-xs text-dark-overlay">
             <div className="min-w-0">
               {profitMode === "true" ? (
                 <>
@@ -502,7 +502,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.total}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Filtre sonrası liste
             </div>
           </CardContent>
@@ -513,7 +513,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.loss}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Kâr &lt; 0
             </div>
           </CardContent>
@@ -524,7 +524,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.reorder}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Önerilen sipariş &gt; 0
             </div>
           </CardContent>
@@ -535,7 +535,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.critical}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Stok 0 veya DIR ≤ 7
             </div>
           </CardContent>
@@ -546,7 +546,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.overstock}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               DIR ≥ 90
             </div>
           </CardContent>
@@ -557,7 +557,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.liquidation}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               İndirim önerisi var
             </div>
           </CardContent>
@@ -568,7 +568,7 @@ export function ProductsView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats.dnr}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs text-dark-overlay mt-1">
               Yeniden sipariş yok
             </div>
           </CardContent>
@@ -635,7 +635,7 @@ export function ProductsView() {
                 const p = x.product;
                 return (
                   <TRow key={p.id}>
-                    <TD className="font-mono text-xs text-slate-600 dark:text-slate-300">
+                    <TD className="font-mono text-xs text-dark-overlay">
                       {p.sku}
                     </TD>
                     <TD className="font-medium">{p.name}</TD>
@@ -650,7 +650,7 @@ export function ProductsView() {
                     <TD className="text-right tabular-nums">
                       {x.returnsUnits}
                       {x.returnRate == null ? null : (
-                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="ml-2 text-xs text-dark-overlay">
                           ({formatPercent(x.returnRate)})
                         </span>
                       )}
@@ -669,11 +669,11 @@ export function ProductsView() {
                             updateCogs.mutate({ id: p.id, cogs: next });
                           }}
                         />
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                        <span className="text-xs text-dark-overlay">
                           ₺
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 text-right mt-1">
+                      <div className="text-[11px] text-dark-overlay text-right mt-1">
                         Birim kâr: {formatCurrencyTRY(x.unitProfit)}
                       </div>
                     </TD>
@@ -681,7 +681,7 @@ export function ProductsView() {
                       <span
                         className={
                           x.totalProfit < 0
-                            ? "text-rose-700 dark:text-rose-200"
+                            ? "text-coral-alert"
                             : undefined
                         }
                       >
@@ -694,12 +694,12 @@ export function ProductsView() {
                     <TD className="text-right tabular-nums">
                       <div className="flex flex-col items-end gap-1">
                         {x.recommendedUnits != null && x.recommendedUnits > 0 && !p.dnr && (
-                          <span className="text-xs text-emerald-700 dark:text-emerald-200">
+                          <span className="text-xs text-mint-confirm">
                             +{x.recommendedUnits} sipariş
                           </span>
                         )}
                         {x.liquidationDiscount != null && (
-                          <span className="text-xs text-amber-700 dark:text-amber-200">
+                          <span className="text-xs text-[#b07010]">
                             {x.liquidationDiscount} indirim
                           </span>
                         )}
@@ -740,13 +740,13 @@ export function ProductsView() {
           </Table>
 
           {enriched.length === 0 && (
-            <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-4 text-sm text-dark-overlay">
               Sonuç yok.
             </div>
           )}
 
           {itemsQuery.isFetching && (
-            <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-4 text-xs text-dark-overlay">
               Kârlılık verileri güncelleniyor…
             </div>
           )}

@@ -117,7 +117,7 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
         <h3 className="text-xs font-medium text-dark-overlay tracking-[0.08em] uppercase mb-3">
           Genel Performans Değerlendirmesi
         </h3>
-        <div className="overflow-auto rounded-[26px] bg-warm-gray">
+        <div className="overflow-auto rounded-xl bg-warm-gray">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-frosted-glass/40">

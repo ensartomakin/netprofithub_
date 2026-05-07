@@ -55,7 +55,7 @@ type StatTileProps = {
 /* Seed: warm-gray surface inside white card */
 function StatTile({ icon, label, value, change, linkLabel }: StatTileProps) {
   return (
-    <div className="flex flex-col gap-2 p-4 rounded-[26px] bg-warm-gray">
+    <div className="flex flex-col gap-2 p-4 rounded-xl bg-warm-gray">
       <div className="flex items-center gap-1.5 text-dark-overlay">
         {icon}
         <span className="text-xs">{label}</span>
@@ -84,7 +84,7 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-[26px] bg-white px-4 py-3 text-xs border border-frosted-glass">
+    <div className="rounded-xl bg-white px-4 py-3 text-xs border border-frosted-glass">
       <div className="font-medium text-charcoal-text mb-1.5">{label}</div>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
