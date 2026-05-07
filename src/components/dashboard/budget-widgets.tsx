@@ -39,10 +39,10 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <CardTitle>Hedef Bütçe</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-medium tabular-nums text-near-black">
+          <div className="text-2xl font-medium tabular-nums text-charcoal-text">
             {spendTarget == null ? "—" : formatCurrencyTRY(spendTarget)}
           </div>
-          <div className="text-xs text-graphite mt-1">
+          <div className="text-xs text-dark-overlay mt-1">
             Hedef Bütçe = Hedef Ciro / Hedef ROI
           </div>
         </CardContent>
@@ -53,10 +53,10 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <CardTitle>Hedefe Kalan Bütçe</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-medium tabular-nums text-near-black">
+          <div className="text-2xl font-medium tabular-nums text-charcoal-text">
             {remainingBudget == null ? "—" : formatCurrencyTRY(remainingBudget)}
           </div>
-          <div className="text-xs text-graphite mt-1">
+          <div className="text-xs text-dark-overlay mt-1">
             Bugüne kadar: {formatCurrencyTRY(spendToDate)}
           </div>
         </CardContent>
@@ -67,10 +67,10 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <CardTitle>Günlük Bütçe</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-medium tabular-nums text-near-black">
+          <div className="text-2xl font-medium tabular-nums text-charcoal-text">
             {dailyBudget == null ? "—" : formatCurrencyTRY(dailyBudget)}
           </div>
-          <div className="text-xs text-graphite mt-1">
+          <div className="text-xs text-dark-overlay mt-1">
             Kalan gün: {month ? daysLeft : "—"}
           </div>
         </CardContent>
@@ -81,10 +81,10 @@ export function BudgetWidgets({ month }: { month: MonthSummary | null | undefine
           <CardTitle>Hedef COS</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-medium tabular-nums text-near-black">
+          <div className="text-2xl font-medium tabular-nums text-charcoal-text">
             {targetCos == null ? "—" : `${formatNumber(targetCos * 100)}%`}
           </div>
-          <div className="text-xs text-graphite mt-1">
+          <div className="text-xs text-dark-overlay mt-1">
             COS = Harcama / Ciro
           </div>
         </CardContent>

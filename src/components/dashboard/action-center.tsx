@@ -16,12 +16,12 @@ const variantBySeverity: Record<ActionItem["severity"], Parameters<typeof Badge>
   danger: "danger",
 };
 
-/* Left-border accent per severity, parchment background — no outer border */
+/* Left-border accent per severity, warm-gray background */
 const accentBySeverity: Record<ActionItem["severity"], string> = {
-  info: "border-l-[3px] border-stone bg-parchment-card",
+  info: "border-l-[3px] border-frosted-glass bg-warm-gray",
   success: "border-l-[3px] border-[#1dc479] bg-[#1dc479]/5",
   warning: "border-l-[3px] border-[#e8a020] bg-[#e8a020]/5",
-  danger: "border-l-[3px] border-coral-alert bg-[#eb3131]/5",
+  danger: "border-l-[3px] border-[#eb3131] bg-[#eb3131]/5",
 };
 
 export function ActionCenter({ items }: { items: ActionItem[] }) {
@@ -32,15 +32,15 @@ export function ActionCenter({ items }: { items: ActionItem[] }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {items.length === 0 && (
-          <div className="text-sm text-graphite">Şu an belirgin bir aksiyon yok.</div>
+          <div className="text-sm text-dark-overlay">Şu an belirgin bir aksiyon yok.</div>
         )}
         {items.map((it) => (
           <div
             key={it.title}
-            className={`rounded-r-[26px] pl-4 pr-4 py-3 ${accentBySeverity[it.severity]}`}
+            className={`rounded-r-[16px] pl-4 pr-4 py-3 ${accentBySeverity[it.severity]}`}
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="font-medium text-sm text-near-black">{it.title}</div>
+              <div className="font-medium text-sm text-charcoal-text">{it.title}</div>
               <Badge variant={variantBySeverity[it.severity]}>
                 {it.severity === "danger" ? "Kritik"
                   : it.severity === "warning" ? "Uyarı"
@@ -48,7 +48,7 @@ export function ActionCenter({ items }: { items: ActionItem[] }) {
                   : "Bilgi"}
               </Badge>
             </div>
-            <div className="text-xs text-graphite mt-1.5 leading-relaxed">{it.detail}</div>
+            <div className="text-xs text-dark-overlay mt-1.5 leading-relaxed">{it.detail}</div>
           </div>
         ))}
       </CardContent>

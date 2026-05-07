@@ -94,13 +94,13 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Metrikler</CardTitle>
-          <div className="flex rounded-[26px] p-1 bg-parchment-card">
+          <div className="flex rounded-[16px] p-1 bg-warm-gray">
             <Button
               size="sm"
               variant="ghost"
               className={cn(
-                "h-7 px-3 text-xs rounded-[26px] border-transparent",
-                view === "daily" && "bg-near-black text-white hover:bg-near-black"
+                "h-7 px-3 text-xs rounded-full border-transparent",
+                view === "daily" && "bg-forest-green text-snow-white hover:bg-forest-green"
               )}
               onClick={() => setView("daily")}
             >
@@ -110,8 +110,8 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
               size="sm"
               variant="ghost"
               className={cn(
-                "h-7 px-3 text-xs rounded-[26px] border-transparent",
-                view === "monthly" && "bg-near-black text-white hover:bg-near-black"
+                "h-7 px-3 text-xs rounded-full border-transparent",
+                view === "monthly" && "bg-forest-green text-snow-white hover:bg-forest-green"
               )}
               onClick={() => setView("monthly")}
             >
@@ -123,8 +123,8 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
       <CardContent>
         <div className="w-full overflow-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-graphite">
-              <tr className="border-b border-stone">
+            <thead className="text-xs uppercase text-dark-overlay">
+              <tr className="border-b border-frosted-glass">
                 <th className="px-3 py-3 text-left font-medium">Tarih</th>
                 <th className="px-3 py-3 text-right font-medium">Ciro</th>
                 <th className="px-3 py-3 text-right font-medium">Sipariş</th>
@@ -141,28 +141,28 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
             </thead>
             <tbody>
               {/* Totals row */}
-              <tr className="border-b border-stone bg-parchment-card">
-                <td className="px-3 py-3 font-medium text-near-black">TOPLAM</td>
-                <td className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+              <tr className="border-b border-frosted-glass bg-warm-gray">
+                <td className="px-3 py-3 font-medium text-charcoal-text">TOPLAM</td>
+                <td className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                   {formatCurrencyTRY(totalRevenue)}
                 </td>
-                <td className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+                <td className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                   {totalTx}
                 </td>
-                <td className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+                <td className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                   {aov == null ? "—" : formatCurrencyTRY(aov)}
                 </td>
-                <td className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+                <td className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                   {formatCurrencyTRY(totalSpend)}
                 </td>
-                <td className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+                <td className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                   {cos == null ? "—" : `${formatNumber(cos * 100)}%`}
                 </td>
-                <td className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+                <td className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                   {roi == null ? "—" : formatNumber(roi)}
                 </td>
                 {platformColumns.map((p) => (
-                  <td key={p} className="px-3 py-3 text-right font-medium tabular-nums text-near-black">
+                  <td key={p} className="px-3 py-3 text-right font-medium tabular-nums text-charcoal-text">
                     {formatCurrencyTRY(rows.reduce((acc, r) => acc + Number(r.platform?.[p] ?? 0), 0))}
                   </td>
                 ))}
@@ -171,29 +171,29 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
               {viewRows.map((r) => (
                 <tr
                   key={r.date}
-                  className={cn("border-b border-stone/40 last:border-0")}
+                  className={cn("border-b border-frosted-glass/40 last:border-0")}
                 >
-                  <td className="px-3 py-3 text-graphite">{r.date}</td>
-                  <td className="px-3 py-3 text-right tabular-nums text-near-black">
+                  <td className="px-3 py-3 text-dark-overlay">{r.date}</td>
+                  <td className="px-3 py-3 text-right tabular-nums text-charcoal-text">
                     {formatCurrencyTRY(r.revenue)}
                   </td>
-                  <td className="px-3 py-3 text-right tabular-nums text-near-black">
+                  <td className="px-3 py-3 text-right tabular-nums text-charcoal-text">
                     {r.transactions}
                   </td>
-                  <td className="px-3 py-3 text-right tabular-nums text-near-black">
+                  <td className="px-3 py-3 text-right tabular-nums text-charcoal-text">
                     {r.aov == null ? "—" : formatCurrencyTRY(r.aov)}
                   </td>
-                  <td className="px-3 py-3 text-right tabular-nums text-near-black">
+                  <td className="px-3 py-3 text-right tabular-nums text-charcoal-text">
                     {formatCurrencyTRY(r.adSpend)}
                   </td>
                   <td
-                    className="px-3 py-3 text-right tabular-nums text-near-black"
+                    className="px-3 py-3 text-right tabular-nums text-charcoal-text"
                     style={{ background: heat(r.cos, "goodLow") }}
                   >
                     {r.cos == null ? "—" : `${formatNumber(r.cos * 100)}%`}
                   </td>
                   <td
-                    className="px-3 py-3 text-right tabular-nums text-near-black"
+                    className="px-3 py-3 text-right tabular-nums text-charcoal-text"
                     style={{ background: heat(r.roi, "goodHigh") }}
                   >
                     {r.roi == null ? "—" : formatNumber(r.roi)}
@@ -202,9 +202,9 @@ export function MetricsTable({ rows }: { rows: DailyMetricsRow[] }) {
                     const v = Number(r.platform?.[p] ?? 0);
                     const pct = r.adSpend > 0 ? v / r.adSpend : 0;
                     return (
-                      <td key={p} className="px-3 py-3 text-right tabular-nums text-near-black">
+                      <td key={p} className="px-3 py-3 text-right tabular-nums text-charcoal-text">
                         {formatCurrencyTRY(v)}{" "}
-                        <span className="text-xs text-graphite">
+                        <span className="text-xs text-dark-overlay">
                           ({Math.round(pct * 100)}%)
                         </span>
                       </td>
