@@ -37,21 +37,22 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-[260px] shrink-0 border-r border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-950/30 backdrop-blur">
-      <div className="px-4 py-4">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 grid place-items-center shadow-sm">
+    <aside className="w-[240px] shrink-0 border-r border-stone bg-parchment-card dark:bg-charcoal dark:border-charcoal flex flex-col">
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-stone dark:border-charcoal">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-[26px] bg-electric-lime text-near-black grid place-items-center font-bold text-sm shrink-0">
             N
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-semibold">NetProfitHub</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              MVP
-            </div>
+            <div className="text-sm font-medium text-near-black dark:text-white">NetProfitHub</div>
+            <div className="text-xs text-graphite">Dashboard</div>
           </div>
         </div>
       </div>
-      <nav className="px-2 pb-4">
+
+      {/* Nav */}
+      <nav className="px-3 py-4 flex-1 space-y-0.5">
         {nav.map((item) => {
           const active =
             pathname === item.href ||
@@ -62,13 +63,13 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                "text-slate-700 hover:bg-slate-100/70 dark:text-slate-200 dark:hover:bg-slate-900/60",
-                active &&
-                  "bg-slate-900 text-white hover:bg-slate-900 dark:bg-slate-100 dark:text-slate-950"
+                "flex items-center gap-3 rounded-[26px] px-3 py-2 text-sm transition-colors",
+                active
+                  ? "bg-near-black text-white font-medium dark:bg-electric-lime dark:text-near-black"
+                  : "text-graphite hover:bg-warm-cream hover:text-near-black dark:text-stone dark:hover:bg-charcoal/60 dark:hover:text-white"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 shrink-0" />
               <span>{item.label}</span>
             </Link>
           );

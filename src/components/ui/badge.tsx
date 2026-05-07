@@ -5,13 +5,13 @@ type Variant = "default" | "success" | "warning" | "danger";
 
 const variantClass: Record<Variant, string> = {
   default:
-    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800",
+    "bg-white text-near-black border-stone dark:bg-charcoal dark:text-white dark:border-charcoal",
   success:
-    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-900/50",
+    "bg-[#1dc479]/10 text-[#1dc479] border-[#1dc479]/30",
   warning:
-    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-900/50",
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/40",
   danger:
-    "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900/50",
+    "bg-[#eb3131]/10 text-[#eb3131] border-[#eb3131]/30",
 };
 
 export function Badge({
@@ -22,7 +22,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-[8px] border px-2.5 py-0.5 text-xs font-medium",
         variantClass[variant],
         className
       )}
