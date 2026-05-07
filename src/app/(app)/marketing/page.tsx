@@ -5,7 +5,7 @@ export default function MarketingPage() {
   return (
     <div className="min-h-full">
       <Topbar title="Pazarlama" />
-      <main className="px-6 py-6">
+      <main className="px-8 pb-8">
         <MarketingView />
       </main>
     </div>

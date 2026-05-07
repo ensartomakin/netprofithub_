@@ -5,7 +5,7 @@ export default function CustomersPage() {
   return (
     <div className="min-h-full">
       <Topbar title="Müşteri Analitiği" />
-      <main className="px-6 py-6 space-y-6">
+      <main className="px-8 pb-8 space-y-5">
         <CustomerAnalyticsView />
       </main>
     </div>

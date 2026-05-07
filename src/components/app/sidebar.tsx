@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Boxes,
   BrainCircuit,
   Cable,
+  LogOut,
   Settings,
   PackageSearch,
   ShoppingCart,
@@ -17,6 +18,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSupabaseClient } from "@/lib/supabase/client";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -35,25 +37,31 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+  }
 
   return (
-    /* Level 0 — warm-cream sidebar surface */
-    <aside className="w-[240px] shrink-0 bg-snow-white flex flex-col">
+    /* Dark surface sidebar — near-black #14140f */
+    <aside className="w-[240px] shrink-0 bg-forest-green flex flex-col">
       {/* Logo */}
-      <div className="px-4 py-5">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-[26px] bg-pale-green text-forest-green grid place-items-center font-medium text-sm shrink-0 select-none">
-            N
+      <div className="px-5 py-6">
+        <div className="leading-tight">
+          <div className="text-base font-medium text-snow-white tracking-[-0.01em]">
+            NetProfitHub<span className="text-pale-green">.</span>
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-medium text-charcoal-text">NetProfitHub</div>
-            <div className="text-[11px] text-dark-overlay tracking-[0.06em]">DASHBOARD</div>
+          <div className="text-[10px] text-dark-overlay tracking-[0.10em] uppercase mt-0.5">
+            SaaS Analytics MVP
           </div>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="mx-4 h-px bg-frosted-glass mb-2" />
+      <div className="mx-5 h-px bg-white/10 mb-2" />
 
       {/* Nav links */}
       <nav className="px-3 py-2 flex-1 space-y-0.5">
@@ -69,8 +77,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-[26px] px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-forest-green text-snow-white font-medium"
-                  : "text-dark-overlay hover:bg-warm-gray hover:text-charcoal-text"
+                  ? "bg-pale-green text-forest-green font-medium"
+                  : "text-snow-white/70 hover:bg-white/10 hover:text-snow-white"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -79,6 +87,18 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Bottom — sign out */}
+      <div className="mx-5 h-px bg-white/10 mb-2" />
+      <div className="px-3 pb-5">
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-3 rounded-[26px] px-3 py-2 text-sm text-snow-white/70 hover:bg-white/10 hover:text-snow-white transition-colors"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span>Çıkış Yap</span>
+        </button>
+      </div>
     </aside>
   );
 }

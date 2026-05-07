@@ -5,7 +5,7 @@ export default function ProductsPage() {
   return (
     <div className="min-h-full">
       <Topbar title="Ürünler" />
-      <main className="px-6 py-6">
+      <main className="px-8 pb-8">
         <ProductsView />
       </main>
     </div>
