@@ -306,6 +306,152 @@ export async function fetchDailyMetrics(params: {
   );
 }
 
+export type HourlyPoint = {
+  hour: string;
+  today: number;
+  yesterday: number;
+};
+
+export async function fetchTodayVsYesterdayTimeseries(params: {
+  storeId: string;
+}): Promise<{ points: HourlyPoint[]; todayTotal: number; yesterdayTotal: number; todayTx: number; yesterdayTx: number }> {
+  const { storeId } = params;
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+  const yesterdayEnd = todayStart;
+
+  const supabase = getSupabaseClient();
+
+  const { data: todayOrders, error: e1 } = await supabase
+    .from("orders")
+    .select("amount,status,ordered_at")
+    .eq("store_id", storeId)
+    .gte("ordered_at", todayStart.toISOString())
+    .lt("ordered_at", todayEnd.toISOString());
+  if (e1) throw e1;
+
+  const { data: yesterdayOrders, error: e2 } = await supabase
+    .from("orders")
+    .select("amount,status,ordered_at")
+    .eq("store_id", storeId)
+    .gte("ordered_at", yesterdayStart.toISOString())
+    .lt("ordered_at", yesterdayEnd.toISOString());
+  if (e2) throw e2;
+
+  const bucket = (orders: typeof todayOrders, baseDate: Date) => {
+    const map = new Map<number, number>();
+    for (const o of orders ?? []) {
+      if (o.status !== "odendi") continue;
+      const d = new Date(String(o.ordered_at));
+      const h = d.getHours();
+      map.set(h, (map.get(h) ?? 0) + Number(o.amount ?? 0));
+    }
+    return map;
+  };
+
+  const todayMap = bucket(todayOrders, todayStart);
+  const yesterdayMap = bucket(yesterdayOrders, yesterdayStart);
+
+  const points: HourlyPoint[] = Array.from({ length: 24 }, (_, h) => ({
+    hour: `${String(h).padStart(2, "0")}:00`,
+    today: todayMap.get(h) ?? 0,
+    yesterday: yesterdayMap.get(h) ?? 0,
+  }));
+
+  const todayTotal = (todayOrders ?? []).filter((o) => o.status === "odendi").reduce((a, o) => a + Number(o.amount ?? 0), 0);
+  const yesterdayTotal = (yesterdayOrders ?? []).filter((o) => o.status === "odendi").reduce((a, o) => a + Number(o.amount ?? 0), 0);
+  const todayTx = (todayOrders ?? []).filter((o) => o.status === "odendi").length;
+  const yesterdayTx = (yesterdayOrders ?? []).filter((o) => o.status === "odendi").length;
+
+  return { points, todayTotal, yesterdayTotal, todayTx, yesterdayTx };
+}
+
+export type WeeklyComparisonRow = {
+  metric: string;
+  current: number | null;
+  previous: number | null;
+  change: number | null;
+};
+
+export type WeeklyComparisonResult = {
+  currentDate: string;
+  previousDate: string;
+  rows: WeeklyComparisonRow[];
+};
+
+export async function fetchWeeklyComparison(params: {
+  storeId: string;
+}): Promise<WeeklyComparisonResult> {
+  const { storeId } = params;
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  const prevWeekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const prevWeekEnd = new Date(todayEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const supabase = getSupabaseClient();
+
+  const fetchDayOrders = async (from: Date, to: Date) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("amount,status,ordered_at")
+      .eq("store_id", storeId)
+      .gte("ordered_at", from.toISOString())
+      .lt("ordered_at", to.toISOString());
+    if (error) throw error;
+    return data ?? [];
+  };
+
+  const fetchDaySpend = async (date: string) => {
+    const { data, error } = await supabase
+      .from("marketing_spend")
+      .select("spend")
+      .eq("store_id", storeId)
+      .eq("date", date);
+    if (error) throw error;
+    return (data ?? []).reduce((a, s) => a + Number(s.spend ?? 0), 0);
+  };
+
+  const [currentOrders, prevOrders, currentSpend, prevSpend] = await Promise.all([
+    fetchDayOrders(todayStart, todayEnd),
+    fetchDayOrders(prevWeekStart, prevWeekEnd),
+    fetchDaySpend(isoDate(todayStart)),
+    fetchDaySpend(isoDate(prevWeekStart)),
+  ]);
+
+  const summarize = (orders: Awaited<ReturnType<typeof fetchDayOrders>>) => {
+    const paid = orders.filter((o) => o.status === "odendi");
+    const revenue = paid.reduce((a, o) => a + Number(o.amount ?? 0), 0);
+    const transactions = paid.length;
+    return { revenue, transactions };
+  };
+
+  const cur = summarize(currentOrders);
+  const prev = summarize(prevOrders);
+
+  const pct = (a: number | null, b: number | null) => {
+    if (a == null || b == null || b === 0) return null;
+    return (a - b) / b;
+  };
+
+  const rows: WeeklyComparisonRow[] = [
+    { metric: "Transactions", current: cur.transactions, previous: prev.transactions, change: pct(cur.transactions, prev.transactions) },
+    { metric: "Revenue", current: cur.revenue, previous: prev.revenue, change: pct(cur.revenue, prev.revenue) },
+    { metric: "Cost", current: currentSpend, previous: prevSpend, change: pct(currentSpend, prevSpend) },
+  ];
+
+  const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+
+  return {
+    currentDate: `${fmt(todayStart)} (${dayNames[todayStart.getDay()]})`,
+    previousDate: fmt(prevWeekStart),
+    rows,
+  };
+}
+
 export type MonthTargets = {
   revenueTarget: number;
   roiTarget: number;
