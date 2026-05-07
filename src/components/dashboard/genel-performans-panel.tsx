@@ -189,7 +189,7 @@ export function GenerelPerformansPanel({ storeId }: { storeId: string }) {
                 <stop offset="95%" stopColor="#d2d2c8" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(196,199,196,0.5)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(210,210,200,0.5)" />
             <XAxis
               dataKey="hour"
               tick={{ fontSize: 10, fill: "#6e6e64" }}

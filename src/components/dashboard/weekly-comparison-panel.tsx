@@ -160,7 +160,7 @@ export function WeeklyComparisonPanel({ storeId }: { storeId: string }) {
           {trends.map((t) => (
             <div
               key={t.title}
-              className="border-l-[3px] border-[#eb3131] pl-4 py-3 rounded-r-[16px] bg-[#eb3131]/5"
+              className="border-l-[3px] border-[#eb3131] pl-4 py-3 rounded-r-[26px] bg-[#eb3131]/5"
             >
               <div className="text-xs font-medium text-charcoal-text mb-1">• {t.title}</div>
               <div className="text-xs text-dark-overlay leading-relaxed">{t.body}</div>
